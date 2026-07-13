@@ -1,8 +1,9 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
+import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.ServerSocket
-import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
@@ -16,10 +17,13 @@ class KtorTcpServer(
     private val host: String = "0.0.0.0",
     private val port: Int = 5555
 ) {
+    private companion object {
+        const val PROTOCOL_VERSION = 1
+        const val APPLICATION_NAME = "YandexMapDownloadManager"
+    }
     private var selectorManager: SelectorManager? = null
     private var serverSocket: ServerSocket? = null
-    private var currentConnection: KtorConnection? = null
-
+    private var currentConnection: Connection? = null
     suspend fun start() = withContext(Dispatchers.IO) {
         check(serverSocket == null) { "Server already started" }
 
@@ -30,21 +34,55 @@ class KtorTcpServer(
             .bind(host, port)
     }
 
-    suspend fun waitForConnection(): Connection =
-        withContext(Dispatchers.IO) {
+    suspend fun waitForConnection(): Connection {
 
-            val socket = serverSocket?.accept()
-                ?: error("Server is not started")
+        while (true) {
 
-            val frameIO = FrameIO(
-                socket.openReadChannel(),
-                socket.openWriteChannel(autoFlush = true)
-            )
+            val connection = withContext(Dispatchers.IO) {
 
-            KtorConnection(socket, frameIO).also {
-                currentConnection = it
+                val socket = serverSocket?.accept()
+                    ?: error("Server is not started")
+
+                val frameIO = FrameIO(
+                    socket.openReadChannel(),
+                    socket.openWriteChannel(autoFlush = true)
+                )
+
+                KtorConnection(socket, frameIO)
             }
+
+            if (handshake(connection)) {
+                currentConnection = connection
+                return connection
+            }
+
+            connection.close()
         }
+    }
+
+    private suspend fun handshake(connection: Connection): Boolean {
+
+        val request = connection.receive()
+
+        if (request !is HelloRequest) {
+            return false
+        }
+
+        if (request.protocolVersion != PROTOCOL_VERSION) {
+            return false
+        }
+
+        if (request.application != APPLICATION_NAME) {
+            return false
+        }
+
+        return connection.send(
+            HelloResponse(
+                protocolVersion = PROTOCOL_VERSION,
+                application = APPLICATION_NAME
+            )
+        )
+    }
 
     /**
      * Останавливает сервер и закрывает все ресурсы.

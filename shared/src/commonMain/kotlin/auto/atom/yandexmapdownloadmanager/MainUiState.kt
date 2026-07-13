@@ -76,5 +76,7 @@ data class MainUiState(
      * * "12:31:24 Подключен клиент"
      * * "12:31:25 Получена команда PING"
      */
-    val log: List<String> = emptyList()
+    val log: List<String> = emptyList(),
+
+    val isBusy: Boolean = false
 )

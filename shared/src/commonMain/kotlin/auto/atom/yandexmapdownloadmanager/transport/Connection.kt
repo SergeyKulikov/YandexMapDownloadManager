@@ -1,7 +1,7 @@
-
 package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.Message
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Соединение между Desktop и Android.
@@ -28,13 +28,21 @@ import auto.atom.yandexmapdownloadmanager.protocol.Message
 interface Connection {
 
     /**
+     * Текущее состояние соединения.
+     *
+     * true — соединение активно.
+     * false — соединение разорвано.
+     */
+    val isConnected: StateFlow<Boolean>
+
+    /**
      * Отправляет сообщение удаленной стороне.
      *
      * Метод завершается после помещения сообщения в транспорт.
      *
      * @param message сообщение для отправки.
      */
-    suspend fun send(message: Message)
+    suspend fun send(message: Message): Boolean
 
     /**
      * Ожидает получение следующего сообщения.
@@ -44,7 +52,7 @@ interface Connection {
      *
      * @return полученное сообщение.
      */
-    suspend fun receive(): Message
+    suspend fun receive(): Message?
 
     /**
      * Закрывает соединение и освобождает связанные ресурсы.

@@ -1,19 +1,108 @@
 package auto.atom.yandexmapdownloadmanager
 
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
+/**
+ * ViewModel Android-приложения.
+ *
+ * Управляет подключением к Desktop-серверу и
+ * предоставляет состояние пользовательского интерфейса.
+ */
 class AndroidViewModel {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val client = KtorTcpClient()
 
+    private var connectionJob: Job? = null
+
+    private val _uiState = MutableStateFlow(AndroidUiState())
+    val uiState: StateFlow<AndroidUiState> = _uiState.asStateFlow()
+
+    /**
+     * Подключается к Desktop-серверу.
+     */
     suspend fun connect() {
-        client.connect(
-            host = "10.0.2.2",
-            port = 5555
+
+        try {
+
+            _uiState.value = _uiState.value.copy(
+                isBusy = true,
+                status = "Подключение..."
+            )
+
+            client.connect(
+                host = "10.0.2.2",
+                port = 5555
+            )
+
+            _uiState.value = _uiState.value.copy(
+                isConnected = true,
+                isBusy = false,
+                status = "Подключено"
+            )
+
+            connectionJob?.cancel()
+
+            connectionJob = scope.launch {
+
+                client.currentConnection
+                    ?.isConnected
+                    ?.collect { connected ->
+
+                        _uiState.value = _uiState.value.copy(
+                            isConnected = connected,
+                            isBusy = false,
+                            status = if (connected)
+                                "Подключено"
+                            else
+                                "Соединение потеряно"
+                        )
+                    }
+            }
+
+        } catch (e: Exception) {
+
+            _uiState.value = _uiState.value.copy(
+                isConnected = false,
+                isBusy = false,
+                status = e.message ?: "Ошибка подключения"
+            )
+        }
+    }
+
+    /**
+     * Отключается от Desktop-серверу.
+     */
+    suspend fun disconnect() {
+
+        connectionJob?.cancel()
+        connectionJob = null
+
+        client.close()
+
+        _uiState.value = _uiState.value.copy(
+            isConnected = false,
+            isBusy = false,
+            status = "Отключено"
         )
     }
 
-    suspend fun disconnect() {
-        client.close()
+    /**
+     * Устанавливает текст статуса.
+     */
+    fun setStatus(status: String) {
+        _uiState.value = _uiState.value.copy(
+            status = status,
+            isBusy = true
+        )
     }
 }

@@ -3,6 +3,8 @@ package auto.atom.yandexmapdownloadmanager.transport
 import auto.atom.yandexmapdownloadmanager.protocol.Message
 import io.ktor.network.sockets.Socket
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
 /**
@@ -16,16 +18,54 @@ internal class KtorConnection(
     private val frameIO: FrameIO
 ) : Connection {
 
-    override suspend fun send(message: Message) {
-        val jsonString = ProtocolJson.encodeToString(Message.serializer(), message)
-        val payload = jsonString.encodeToByteArray()
-        frameIO.writeFrame(payload)
+    private val _isConnected = MutableStateFlow(true)
+    override val isConnected: StateFlow<Boolean> = _isConnected
+
+    override suspend fun send(message: Message): Boolean {
+        if (!_isConnected.value) {
+            return false
+        }
+
+        return try {
+            val json = ProtocolJson.encodeToString(
+                Message.serializer(),
+                message
+            )
+
+            frameIO.writeFrame(json.encodeToByteArray())
+
+            true
+        } catch (_: Exception) {
+            _isConnected.value = false
+
+            runCatching { frameIO.close() }
+            runCatching { socket.close() }
+            false
+        }
     }
 
-    override suspend fun receive(): Message {
-        val payload = frameIO.readFrame()
-        val jsonString = payload.decodeToString()
-        return ProtocolJson.decodeFromString(Message.serializer(), jsonString)
+    override suspend fun receive(): Message? {
+
+        if (!_isConnected.value) {
+            return null
+        }
+
+        return try {
+
+            val payload = frameIO.readFrame()
+
+            ProtocolJson.decodeFromString(
+                Message.serializer(),
+                payload.decodeToString()
+            )
+
+        } catch (_: Exception) {
+            _isConnected.value = false
+
+            runCatching { frameIO.close() }
+            runCatching { socket.close() }
+            null
+        }
     }
 
     /**
@@ -33,16 +73,11 @@ internal class KtorConnection(
      */
     override suspend fun close() {
         withContext(Dispatchers.IO) {
+            _isConnected.value = false
 
-            runCatching {
-                frameIO.close()
-            }
-
-            runCatching {
-                socket.close()
-            }.onFailure {
-                // Log.w("TRANSPORT", "Socket close failed", it)
-            }
+            runCatching { frameIO.close() }
+            runCatching { socket.close() }
         }
     }
+
 }

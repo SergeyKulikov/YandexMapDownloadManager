@@ -23,10 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-@Preview
-fun App() {
+fun App(viewModel: MainViewModel) {
 
-    val viewModel = MainViewModel()
+    // val viewModel = androidx.compose.runtime.remember { MainViewModel() }
     val uiState by viewModel.uiState.collectAsState()
 
     MaterialTheme {
@@ -82,6 +81,7 @@ fun App() {
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isBusy,
                     onClick = {
                         if (uiState.isServerRunning) {
                             viewModel.stopServer()
@@ -91,10 +91,19 @@ fun App() {
                     }
                 ) {
                     Text(
-                        if (uiState.isServerRunning)
-                            "Остановить сервер"
-                        else
-                            "Запустить сервер"
+                        when {
+                            uiState.isBusy && uiState.isServerRunning ->
+                                "Остановка..."
+
+                            uiState.isBusy ->
+                                "Запуск..."
+
+                            uiState.isServerRunning ->
+                                "Остановить сервер"
+
+                            else ->
+                                "Запустить сервер"
+                        }
                     )
                 }
             }

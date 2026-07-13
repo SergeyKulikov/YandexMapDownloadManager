@@ -47,7 +47,7 @@ object Testing {
                     }
 
                     else -> {
-                        println("Ignoring unexpected message: ${message::class.simpleName}")
+                        println("Ignoring unexpected message: ${message!!::class.simpleName}")
                     }
                 }
             }

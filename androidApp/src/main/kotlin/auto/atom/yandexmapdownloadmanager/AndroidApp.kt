@@ -11,7 +11,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +25,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AndroidApp() {
+
+    val viewModel = remember { AndroidViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+
+    val scope = rememberCoroutineScope()
 
     MaterialTheme {
 
@@ -45,28 +54,68 @@ fun AndroidApp() {
                     fontWeight = FontWeight.Bold
                 )
 
-                Text("Статус: Ожидание подключения")
+                Text("Статус: ${uiState.status}")
 
-                Text("Сервер: не подключен")
-
-                Text("Операция: отсутствует")
-
-                LinearProgressIndicator(
-                    progress = { 0f },
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    if (uiState.isConnected)
+                        "Сервер: подключен"
+                    else
+                        "Сервер: не подключен"
                 )
 
-                val viewModel = remember { AndroidViewModel() }
-                val scope = rememberCoroutineScope()
+                Text("Операция: ${uiState.operation}")
+
+                if (uiState.isConnected) {
+                    uiState.progress?.let { progress ->
+
+                        LinearProgressIndicator(
+                            progress = { progress / 100f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Text("$progress%")
+                    }
+                }
 
                 Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isBusy,
                     onClick = {
+
                         scope.launch {
-                            viewModel.connect()
+
+                            if (uiState.isConnected) {
+
+                                // Пользователь сразу увидит действие
+                                viewModel.setStatus("Отключение...")
+
+                                viewModel.disconnect()
+
+                            } else {
+
+                                // Пользователь сразу увидит действие
+                                viewModel.setStatus("Подключение...")
+
+                                viewModel.connect()
+                            }
                         }
                     }
                 ) {
-                    Text("Подключиться")
+                    Text(
+                        when {
+                            uiState.isBusy && uiState.isConnected ->
+                                "Отключение..."
+
+                            uiState.isBusy ->
+                                "Подключение..."
+
+                            uiState.isConnected ->
+                                "Отключиться"
+
+                            else ->
+                                "Подключиться"
+                        }
+                    )
                 }
             }
         }

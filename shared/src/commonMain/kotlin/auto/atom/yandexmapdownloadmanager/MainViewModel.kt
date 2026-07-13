@@ -1,14 +1,17 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 /**
  * ViewModel главного окна приложения.
@@ -25,6 +28,13 @@ class MainViewModel {
         port = 5555
     )
 
+    private var connection: Connection? = null
+
+    /**
+     * Подписка на состояние соединения.
+     */
+    private var connectionJob: Job? = null
+
     private val _uiState = MutableStateFlow(MainUiState())
 
     /**
@@ -34,8 +44,9 @@ class MainViewModel {
 
     /**
      * Запускает сервер.
-     *
-     * Реализация будет добавлена позже.
+     */
+    /**
+     * Запускает сервер.
      */
     fun startServer() {
 
@@ -43,49 +54,109 @@ class MainViewModel {
 
             try {
 
+                _uiState.value = _uiState.value.copy(
+                    isBusy = true,
+                    isServerRunning = false,
+                    isClientConnected = false,
+                    status = "Запуск сервера..."
+                )
+
                 server.start()
 
-                withContext(Dispatchers.Main) {
-                    _uiState.value = _uiState.value.copy(
-                        isServerRunning = true,
-                        status = "Ожидание подключения..."
-                    )
-                }
+                _uiState.value = _uiState.value.copy(
+                    isBusy = false,
+                    isServerRunning = true,
+                    status = "Ожидание подключения..."
+                )
 
-                val connection = server.waitForConnection()
+                connection = server.waitForConnection()
 
-                withContext(Dispatchers.Main) {
-                    _uiState.value = _uiState.value.copy(
-                        isClientConnected = true,
-                        status = "Клиент подключен"
-                    )
+                _uiState.value = _uiState.value.copy(
+                    isClientConnected = true,
+                    status = "Клиент подключен"
+                )
+
+                connectionJob?.cancel()
+
+                connectionJob = launch {
+
+                    connection!!
+                        .isConnected
+                        .collect { connected ->
+
+                            _uiState.value = _uiState.value.copy(
+                                isClientConnected = connected,
+                                status = if (connected)
+                                    "Клиент подключен"
+                                else
+                                    "Соединение потеряно"
+                            )
+                        }
                 }
 
             } catch (e: Exception) {
 
-                withContext(Dispatchers.Main) {
-                    _uiState.value = _uiState.value.copy(
-                        status = e.message ?: "Ошибка"
-                    )
+                connectionJob?.cancel()
+                connectionJob = null
+
+                runCatching {
+                    connection?.close()
                 }
+
+                connection = null
+
+                _uiState.value = _uiState.value.copy(
+                    isBusy = false,
+                    isServerRunning = false,
+                    isClientConnected = false,
+                    status = e.message ?: "Ошибка"
+                )
             }
         }
     }
 
     /**
      * Останавливает сервер.
-     *
-     * Реализация будет добавлена позже.
      */
     fun stopServer() {
 
         scope.launch {
 
+            _uiState.value = _uiState.value.copy(
+                isBusy = true,
+                status = "Остановка сервера..."
+            )
+
+            connectionJob?.cancel()
+            connectionJob = null
+
+            runCatching {
+                connection?.close()
+            }
+
+            connection = null
+
             server.stop()
 
-            withContext(Dispatchers.Main) {
-                _uiState.value = MainUiState()
+            _uiState.value = MainUiState()
+        }
+    }
+
+    /**
+     * Останавливает сервер при закрытии приложения.
+     */
+    fun shutdown() {
+        runBlocking {
+            runCatching {
+                connection?.close()
             }
+
+            runCatching {
+                server.stop()
+            }
+
+            connectionJob?.cancel()
+            scope.cancel()
         }
     }
 }

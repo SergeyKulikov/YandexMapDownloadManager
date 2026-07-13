@@ -1,3 +1,4 @@
+
 package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.Message
@@ -6,7 +7,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.Message
  * Соединение между Desktop и Android.
  *
  * Интерфейс скрывает реализацию транспорта от остального приложения.
- * В текущей версии проекта транспортом является WebSocket на базе Ktor,
+ * В текущей версии проекта транспортом является TCP на базе Ktor Network,
  * однако бизнес-логика не зависит от конкретной реализации.
  *
  * Типичный сценарий работы:
@@ -38,7 +39,7 @@ interface Connection {
     /**
      * Ожидает получение следующего сообщения.
      *
-     * Метод блокируется (suspend) до получения сообщения
+     * Метод блокируется до получения сообщения
      * либо закрытия соединения.
      *
      * @return полученное сообщение.
@@ -46,10 +47,7 @@ interface Connection {
     suspend fun receive(): Message
 
     /**
-     * Закрывает соединение.
-     *
-     * После вызова данного метода дальнейшая отправка и получение
-     * сообщений невозможны.
+     * Закрывает соединение и освобождает связанные ресурсы.
      */
     suspend fun close()
 }

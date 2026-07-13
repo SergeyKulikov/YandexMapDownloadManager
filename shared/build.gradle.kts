@@ -54,6 +54,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
         jvmMain.dependencies {
+            implementation(libs.ktor.network)
             implementation(libs.ktor.client.cio)
             implementation(libs.ktor.server.cio)
         }

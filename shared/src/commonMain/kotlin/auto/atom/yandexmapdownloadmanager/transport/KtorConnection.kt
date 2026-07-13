@@ -1,57 +1,48 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.Message
-import io.ktor.websocket.Frame
-import io.ktor.websocket.readText
-import io.ktor.websocket.DefaultWebSocketSession
+import io.ktor.network.sockets.Socket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Реализация [Connection] поверх WebSocket-сессии Ktor.
+ * Реализация [Connection] поверх Ktor TCP-соединения.
  *
- * Класс инкапсулирует работу с WebSocket и предоставляет
- * простой интерфейс обмена сообщениями.
- *
- * Используется как Desktop, так и Android.
- *
- * Получение самой WebSocket-сессии выполняется
- * классами [KtorDesktopServer] и [KtorAndroidClient].
+ * Использует [FrameIO] и [ProtocolJson].
+ * Не содержит бизнес-логики.
  */
 internal class KtorConnection(
-    private val session: DefaultWebSocketSession
+    private val socket: Socket,
+    private val frameIO: FrameIO
 ) : Connection {
 
     override suspend fun send(message: Message) {
-        val text = ProtocolJson.encodeToString(
-            Message.serializer(),
-            message
-        )
-
-        session.send(Frame.Text(text))
+        val jsonString = ProtocolJson.encodeToString(Message.serializer(), message)
+        val payload = jsonString.encodeToByteArray()
+        frameIO.writeFrame(payload)
     }
 
     override suspend fun receive(): Message {
-
-        while (true) {
-
-            when (val frame = session.incoming.receive()) {
-
-                is Frame.Text -> {
-                    return ProtocolJson.decodeFromString(
-                        Message.serializer(),
-                        frame.readText()
-                    )
-                }
-
-                is Frame.Close -> {
-                    throw IllegalStateException("Соединение закрыто.")
-                }
-
-                else -> Unit
-            }
-        }
+        val payload = frameIO.readFrame()
+        val jsonString = payload.decodeToString()
+        return ProtocolJson.decodeFromString(Message.serializer(), jsonString)
     }
 
+    /**
+     * Закрывает соединение и все связанные ресурсы.
+     */
     override suspend fun close() {
-        session.close()
+        withContext(Dispatchers.IO) {
+
+            runCatching {
+                frameIO.close()
+            }
+
+            runCatching {
+                socket.close()
+            }.onFailure {
+                // Log.w("TRANSPORT", "Socket close failed", it)
+            }
+        }
     }
 }

@@ -27,22 +27,39 @@ class KtorTcpClient {
      * @param port порт сервера
      * @return установленное соединение
      */
-    suspend fun connect(host: String, port: Int): Connection {
-        check(socket == null) { "Client is already connected" }
+    suspend fun connect(host: String, port: Int): Connection =
+        withContext(Dispatchers.IO) {
 
-        selectorManager = SelectorManager(Dispatchers.IO)
-        socket = aSocket(selectorManager!!)
-            .tcp()
-            .connect(host, port)
+            check(socket == null) { "Client is already connected" }
 
-        val readChannel = socket!!.openReadChannel()
-        val writeChannel = socket!!.openWriteChannel(autoFlush = true)
+            try {
+                selectorManager = SelectorManager(Dispatchers.IO)
 
-        val frameIO = FrameIO(readChannel, writeChannel)
-        connection = KtorConnection(socket!!, frameIO)
+                socket = aSocket(selectorManager!!)
+                    .tcp()
+                    .connect(host, port)
 
-        return connection!!
-    }
+                val frameIO = FrameIO(
+                    socket!!.openReadChannel(),
+                    socket!!.openWriteChannel(autoFlush = true)
+                )
+
+                connection = KtorConnection(socket!!, frameIO)
+                connection!!
+
+            } catch (e: Exception) {
+
+                runCatching { connection?.close() }
+                runCatching { socket?.close() }
+                runCatching { selectorManager?.close() }
+
+                connection = null
+                socket = null
+                selectorManager = null
+
+                throw e
+            }
+        }
 
     /**
      * Закрывает соединение и освобождает все ресурсы.

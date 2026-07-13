@@ -71,12 +71,14 @@ fun App() {
                     text = "Операция: ${uiState.operation}"
                 )
 
-                LinearProgressIndicator(
-                    progress = { uiState.progress / 100f },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                uiState.progress?.let { progress ->
+                    LinearProgressIndicator(
+                        progress = { progress / 100f },
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                Text("${uiState.progress}%")
+                    Text("$progress%")
+                }
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),

@@ -14,33 +14,37 @@ import kotlinx.coroutines.withContext
  */
 class KtorTcpServer(
     private val host: String = "0.0.0.0",
-    private val port: Int = 9000
+    private val port: Int = 5555
 ) {
     private var selectorManager: SelectorManager? = null
     private var serverSocket: ServerSocket? = null
     private var currentConnection: KtorConnection? = null
 
-    suspend fun start() {
+    suspend fun start() = withContext(Dispatchers.IO) {
         check(serverSocket == null) { "Server already started" }
 
         selectorManager = SelectorManager(Dispatchers.IO)
+
         serverSocket = aSocket(selectorManager!!)
             .tcp()
             .bind(host, port)
     }
 
-    suspend fun waitForConnection(): Connection {
-        val socket = serverSocket?.accept()
-            ?: throw IllegalStateException("Server is not started. Call start() first.")
+    suspend fun waitForConnection(): Connection =
+        withContext(Dispatchers.IO) {
 
-        val readChannel = socket.openReadChannel()
-        val writeChannel = socket.openWriteChannel(autoFlush = true)
+            val socket = serverSocket?.accept()
+                ?: error("Server is not started")
 
-        val frameIO = FrameIO(readChannel, writeChannel)
-        val connection = KtorConnection(socket, frameIO)
-        currentConnection = connection
-        return connection
-    }
+            val frameIO = FrameIO(
+                socket.openReadChannel(),
+                socket.openWriteChannel(autoFlush = true)
+            )
+
+            KtorConnection(socket, frameIO).also {
+                currentConnection = it
+            }
+        }
 
     /**
      * Останавливает сервер и закрывает все ресурсы.

@@ -62,7 +62,7 @@ data class MainUiState(
      *
      * Если длительная операция не выполняется, содержит значение `0`.
      */
-    val progress: Int = 0,
+    val progress: Int? = null,
 
     /**
      * Журнал событий приложения.

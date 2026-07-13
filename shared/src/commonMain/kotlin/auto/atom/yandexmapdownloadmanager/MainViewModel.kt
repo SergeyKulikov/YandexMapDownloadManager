@@ -1,8 +1,14 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * ViewModel главного окна приложения.
@@ -11,6 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * запуском и остановкой TCP-сервера.
  */
 class MainViewModel {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val server = KtorTcpServer(
+        host = "0.0.0.0",
+        port = 5555
+    )
 
     private val _uiState = MutableStateFlow(MainUiState())
 
@@ -25,10 +38,38 @@ class MainViewModel {
      * Реализация будет добавлена позже.
      */
     fun startServer() {
-        _uiState.value = _uiState.value.copy(
-            isServerRunning = true,
-            status = "Сервер запущен"
-        )
+
+        scope.launch {
+
+            try {
+
+                server.start()
+
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        isServerRunning = true,
+                        status = "Ожидание подключения..."
+                    )
+                }
+
+                val connection = server.waitForConnection()
+
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        isClientConnected = true,
+                        status = "Клиент подключен"
+                    )
+                }
+
+            } catch (e: Exception) {
+
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        status = e.message ?: "Ошибка"
+                    )
+                }
+            }
+        }
     }
 
     /**
@@ -37,9 +78,14 @@ class MainViewModel {
      * Реализация будет добавлена позже.
      */
     fun stopServer() {
-        _uiState.value = _uiState.value.copy(
-            isServerRunning = false,
-            status = "Сервер остановлен"
-        )
+
+        scope.launch {
+
+            server.stop()
+
+            withContext(Dispatchers.Main) {
+                _uiState.value = MainUiState()
+            }
+        }
     }
 }

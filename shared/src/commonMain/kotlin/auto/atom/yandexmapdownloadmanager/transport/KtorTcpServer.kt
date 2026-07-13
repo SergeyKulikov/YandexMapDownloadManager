@@ -2,6 +2,9 @@ package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
+import auto.atom.yandexmapdownloadmanager.protocol.Protocol
+import auto.atom.yandexmapdownloadmanager.protocol.Protocol.APPLICATION_NAME
+import auto.atom.yandexmapdownloadmanager.protocol.Protocol.PROTOCOL_VERSION
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.ServerSocket
 import io.ktor.network.sockets.aSocket
@@ -15,12 +18,8 @@ import kotlinx.coroutines.withContext
  */
 class KtorTcpServer(
     private val host: String = "0.0.0.0",
-    private val port: Int = 5555
+    private val port: Int = Protocol.PORT
 ) {
-    private companion object {
-        const val PROTOCOL_VERSION = 1
-        const val APPLICATION_NAME = "YandexMapDownloadManager"
-    }
     private var selectorManager: SelectorManager? = null
     private var serverSocket: ServerSocket? = null
     private var currentConnection: Connection? = null

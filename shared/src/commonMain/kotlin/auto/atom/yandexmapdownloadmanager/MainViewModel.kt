@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +26,7 @@ class MainViewModel {
 
     private val server = KtorTcpServer(
         host = "0.0.0.0",
-        port = 5555
+        port = Protocol.PORT
     )
 
     private var connection: Connection? = null

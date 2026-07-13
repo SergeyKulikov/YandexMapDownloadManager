@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ class AndroidViewModel {
 
             client.connect(
                 host = "10.0.2.2",
-                port = 5555
+                port = Protocol.PORT
             )
 
             _uiState.value = _uiState.value.copy(

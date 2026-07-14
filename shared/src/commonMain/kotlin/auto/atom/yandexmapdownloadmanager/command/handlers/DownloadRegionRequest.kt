@@ -25,5 +25,5 @@ package auto.atom.yandexmapdownloadmanager.command.handlers
  *    ▼
  * Response(Status.OK)
  */
-class DownloadMapHandler {
+class DownloadRegionRequest {
 }

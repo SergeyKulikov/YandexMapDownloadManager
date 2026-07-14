@@ -1,6 +1,9 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.serializer
 
 /**
  * Настройки сериализации сетевого протокола.
@@ -9,7 +12,7 @@ import kotlinx.serialization.json.Json
  * что гарантирует одинаковое поведение сериализации и
  * десериализации сообщений.
  */
-internal val ProtocolJson = Json {
+val ProtocolJson = Json {
 
     /**
      * Игнорировать неизвестные поля.

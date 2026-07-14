@@ -14,5 +14,9 @@ enum class Status {
     OK,
 
     /** Во время выполнения произошла ошибка. */
-    ERROR
+    ERROR,
+
+    UNSUPPORTED_PROTOCOL,
+
+    NOT_IMPLEMENTED
 }

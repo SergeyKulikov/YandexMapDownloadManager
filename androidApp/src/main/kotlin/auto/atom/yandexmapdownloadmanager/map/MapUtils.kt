@@ -1,7 +1,5 @@
-package auto.atom.yandexmapdownloadmanager.ya
+package auto.atom.yandexmapdownloadmanager.map
 
-import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
-import auto.atom.yandexmapdownloadmanager.map.OfflineRegionNode
 import com.yandex.mapkit.offline_cache.Region
 
 fun buildTree(

@@ -1,6 +1,5 @@
-package auto.atom.yandexmapdownloadmanager.ya
+package auto.atom.yandexmapdownloadmanager.map
 
-import android.content.Context
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.offline_cache.OfflineCacheManager
 import com.yandex.mapkit.offline_cache.Region

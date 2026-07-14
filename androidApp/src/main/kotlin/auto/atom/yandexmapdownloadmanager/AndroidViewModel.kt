@@ -1,12 +1,11 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.map.AndroidProtocolHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpClient
-import auto.atom.yandexmapdownloadmanager.ya.OfflineMapsManager
-import auto.atom.yandexmapdownloadmanager.ya.buildTree
-import auto.atom.yandexmapdownloadmanager.ya.toOfflineRegion
-import com.yandex.mapkit.offline_cache.Region
+import auto.atom.yandexmapdownloadmanager.map.OfflineMapsManager
+import auto.atom.yandexmapdownloadmanager.map.toOfflineRegion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -76,6 +75,14 @@ class AndroidViewModel {
                             else
                                 "Соединение потеряно"
                         )
+
+                        if (connected) {
+                            // Старт обработки команд от сервера
+                            AndroidProtocolHandler(
+                                client.currentConnection!!,
+                                offlineMapsManager
+                            ).run()
+                        }
                     }
             }
 
@@ -116,16 +123,15 @@ class AndroidViewModel {
         )
     }
 
+
     /**
      * Получение списка регионов из менеджера офлайн-карт в своем формате.
      */
     fun loadRegions() {
         offlineMapsManager.loadRegions { regions ->
             _regions.value = regions.toOfflineRegion()
-
-            regions.forEach {
-                println("${it.id}  ${it.name}")
-            }
         }
     }
+
+
 }

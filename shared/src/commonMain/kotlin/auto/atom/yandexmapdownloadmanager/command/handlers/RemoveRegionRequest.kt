@@ -18,5 +18,6 @@ package auto.atom.yandexmapdownloadmanager.command.handlers
  *    ▼
  * Response(Status.OK)
  */
-class DeleteMapHandler {
+class RemoveRegionRequest {
+    val regionId: Int = 0
 }

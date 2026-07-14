@@ -1,6 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
-import auto.atom.yandexmapdownloadmanager.protocol.Message
+import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -42,7 +42,7 @@ interface Connection {
      *
      * @param message сообщение для отправки.
      */
-    suspend fun send(message: Message): Boolean
+    suspend fun send(message: Packet): Boolean
 
     /**
      * Ожидает получение следующего сообщения.
@@ -52,7 +52,7 @@ interface Connection {
      *
      * @return полученное сообщение.
      */
-    suspend fun receive(): Message?
+    suspend fun receive(): Packet?
 
     /**
      * Закрывает соединение и освобождает связанные ресурсы.

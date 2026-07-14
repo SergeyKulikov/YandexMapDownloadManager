@@ -7,9 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.yandex.mapkit.MapKitFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -21,6 +27,8 @@ class MainActivity : ComponentActivity() {
 
         val viewModel = AndroidViewModel()
         viewModel.loadRegions()
+
+
 
         setContent {
             AndroidApp()

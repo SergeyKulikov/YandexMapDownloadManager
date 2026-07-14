@@ -37,18 +37,21 @@ enum class Command {
     /** Получение информации об Android-устройстве. */
     GET_DEVICE_INFO,
 
-    /** Передача файла с Android на Desktop. */
+    GET_REGIONS,
+
+    DOWNLOAD_REGION,
+
+    PAUSE_REGION_DOWNLOAD,
+
+    RESUME_REGION_DOWNLOAD,
+
+    CANCEL_REGION_DOWNLOAD,
+
+    DELETE_REGION,
+
     DOWNLOAD_FILE,
 
-    /** Передача файла с Desktop на Android. */
     UPLOAD_FILE,
 
-    /** Удаление файла на Android. */
-    DELETE_FILE,
-
-    /** Начало загрузки офлайн-карты. */
-    START_MAP_DOWNLOAD,
-
-    /** Отмена текущей загрузки карты. */
-    STOP_MAP_DOWNLOAD
+    DELETE_FILE
 }

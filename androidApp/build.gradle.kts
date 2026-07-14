@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     // alias(libs.plugins.kotlinAndroid)
@@ -24,10 +25,26 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
 
+    implementation(libs.maps.mobile)
+
     debugImplementation(libs.compose.uiTooling)
 }
 
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+
+    if (file.exists()) {
+        file.inputStream().use(::load)
+    }
+}
+
+val mapKitApiKey = localProperties.getProperty("MAPKIT_API_KEY", "")
+
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     namespace = "auto.atom.yandexmapdownloadmanager"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
@@ -37,6 +54,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "MAPKIT_API_KEY", "\"$mapKitApiKey\"")
     }
     packaging {
         resources {

@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference
  * Инкапсулирует OfflineCacheManager и предоставляет
  * простой API для приложения.
  */
-class OfflineMapsManager {
+class OfflineYandexMapsManager {
 
     private val offlineCacheManager: OfflineCacheManager = MapKitFactory.getInstance().offlineCacheManager
     private val regionListUpdatesListener = RegionListUpdatesListener {
@@ -44,6 +44,11 @@ class OfflineMapsManager {
             onLoaded(regions)
         }
     }
+
+    fun loadRegions(): List<Region> {
+        return offlineCacheManager.regions()
+    }
+
 
     /**
      * Начинает загрузку региона.

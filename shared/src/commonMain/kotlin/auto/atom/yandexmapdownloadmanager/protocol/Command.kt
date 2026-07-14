@@ -30,6 +30,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class Command {
+    NONE,
 
     /** Проверка доступности удаленного приложения. */
     PING,

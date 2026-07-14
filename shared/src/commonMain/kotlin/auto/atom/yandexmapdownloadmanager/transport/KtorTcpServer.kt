@@ -2,6 +2,7 @@ package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
+import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.APPLICATION_NAME
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.PROTOCOL_VERSION
@@ -63,22 +64,25 @@ class KtorTcpServer(
 
         val request = connection.receive()
 
-        if (request !is HelloRequest) {
+        if (request?.message !is HelloRequest) {
             return false
         }
 
-        if (request.protocolVersion != PROTOCOL_VERSION) {
+        if (request.message.protocolVersion != PROTOCOL_VERSION) {
             return false
         }
 
-        if (request.application != APPLICATION_NAME) {
+        if (request.message.application != APPLICATION_NAME) {
             return false
         }
 
         return connection.send(
-            HelloResponse(
-                protocolVersion = PROTOCOL_VERSION,
-                application = APPLICATION_NAME
+            Packet(
+                message =
+                    HelloResponse(
+                        protocolVersion = PROTOCOL_VERSION,
+                        application = APPLICATION_NAME
+                    )
             )
         )
     }

@@ -24,6 +24,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class Response(
     val id: String,
+    val command: Command,
     val status: Status,
     val payload: JsonElement? = null,
     val error: String? = null

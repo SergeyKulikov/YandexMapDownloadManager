@@ -1,9 +1,15 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+import auto.atom.yandexmapdownloadmanager.protocol.Command
 import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
+import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.APPLICATION_NAME
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.PROTOCOL_VERSION
+import auto.atom.yandexmapdownloadmanager.protocol.Request
+import auto.atom.yandexmapdownloadmanager.protocol.Response
+import auto.atom.yandexmapdownloadmanager.protocol.Status
+import auto.atom.yandexmapdownloadmanager.protocol.map.RegionsPayload
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.Socket
@@ -11,6 +17,8 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.encodeToJsonElement
+import java.util.UUID
 
 /**
  * TCP-клиент для Android.
@@ -81,24 +89,35 @@ class KtorTcpClient {
     private suspend fun handshake(connection: Connection) {
 
         connection.send(
-            HelloRequest(
-                protocolVersion = PROTOCOL_VERSION,
-                application = APPLICATION_NAME
+            Packet(
+                message = Request(
+                    id = UUID.randomUUID().toString(),
+                    command = Command.PING,
+                    payload = ProtocolJson.encodeToJsonElement(
+                        HelloRequest(
+                            protocolVersion = PROTOCOL_VERSION,
+                            application = APPLICATION_NAME
+                        )
+                    )
+                )
             )
         )
 
         val response = connection.receive()
 
-        require(response is HelloResponse) {
+        require(response?.message is HelloResponse)
+        {
             "Invalid handshake response"
         }
 
-        require(response.protocolVersion == PROTOCOL_VERSION) {
-            "Unsupported protocol version: ${response.protocolVersion}"
+        require(response.message.protocolVersion == PROTOCOL_VERSION)
+        {
+            "Unsupported protocol version: ${response.message.protocolVersion}"
         }
 
-        require(response.application == APPLICATION_NAME) {
-            "Unknown server: ${response.application}"
+        require(response.message.application == APPLICATION_NAME)
+        {
+            "Unknown server: ${response.message.application}"
         }
     }
 

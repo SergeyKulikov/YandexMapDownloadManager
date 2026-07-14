@@ -22,7 +22,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 
 class AndroidProtocolHandler(
     private val connection: Connection,
-    private val offlineMapsManager: OfflineMapsManager
+    private val offlineYandexMapsManager: OfflineYandexMapsManager
 ) {
 
     suspend fun run() {
@@ -37,6 +37,7 @@ class AndroidProtocolHandler(
                     Packet(
                         message = Response(
                             id = "",
+                            command = Command.PING,
                             status = Status.UNSUPPORTED_PROTOCOL
                         )
                     )
@@ -75,12 +76,12 @@ class AndroidProtocolHandler(
 
             Command.GET_REGIONS -> {
 
-                offlineMapsManager.loadRegions { regions ->
-                    /*
+                offlineYandexMapsManager.loadRegions().let { regions ->
                     connection.send(
                         Packet(
                             message = Response(
                                 id = request.id,
+                                command = request.command,
                                 status = Status.OK,
                                 payload = ProtocolJson.encodeToJsonElement(
                                     RegionsPayload(regions.toOfflineRegion())
@@ -88,8 +89,6 @@ class AndroidProtocolHandler(
                             )
                         )
                     )
-
-                     */
                 }
             }
 
@@ -100,12 +99,13 @@ class AndroidProtocolHandler(
                         request.payload!!
                     )
 
-                offlineMapsManager.download(payload.regionId)
+                offlineYandexMapsManager.download(payload.regionId)
 
                 connection.send(
                     Packet(
                         message = Response(
                             id = request.id,
+                            command = request.command,
                             status = Status.OK
                         )
                     )
@@ -113,15 +113,60 @@ class AndroidProtocolHandler(
             }
 
             Command.PAUSE_REGION_DOWNLOAD -> {
-                // ...
+                val payload =
+                    ProtocolJson.decodeFromJsonElement<RegionPayload>(
+                        request.payload!!
+                    )
+
+                offlineYandexMapsManager.pause(payload.regionId)
+
+                connection.send(
+                    Packet(
+                        message = Response(
+                            id = request.id,
+                            command = request.command,
+                            status = Status.OK
+                        )
+                    )
+                )
             }
 
             Command.RESUME_REGION_DOWNLOAD -> {
-                // ...
+                val payload =
+                    ProtocolJson.decodeFromJsonElement<RegionPayload>(
+                        request.payload!!
+                    )
+
+                offlineYandexMapsManager.resume(payload.regionId)
+
+                connection.send(
+                    Packet(
+                        message = Response(
+                            id = request.id,
+                            command = request.command,
+                            status = Status.OK
+                        )
+                    )
+                )
             }
 
             Command.CANCEL_REGION_DOWNLOAD -> {
-                // ...
+                val payload =
+                    ProtocolJson.decodeFromJsonElement<RegionPayload>(
+                        request.payload!!
+                    )
+
+                offlineYandexMapsManager.cancel(payload.regionId)
+
+                connection.send(
+                    Packet(
+                        message = Response(
+                            id = request.id,
+                            command = request.command,
+                            status = Status.OK
+                        )
+                    )
+                )
             }
 
             Command.DELETE_REGION -> {
@@ -131,12 +176,13 @@ class AndroidProtocolHandler(
                         request.payload!!
                     )
 
-                offlineMapsManager.remove(payload.regionId)
+                offlineYandexMapsManager.remove(payload.regionId)
 
                 connection.send(
                     Packet(
                         message = Response(
                             id = request.id,
+                            command = request.command,
                             status = Status.OK
                         )
                     )
@@ -149,6 +195,7 @@ class AndroidProtocolHandler(
                     Packet(
                         message = Response(
                             id = request.id,
+                            command = request.command,
                             status = Status.NOT_IMPLEMENTED
                         )
                     )

@@ -4,7 +4,7 @@ import auto.atom.yandexmapdownloadmanager.map.AndroidProtocolHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpClient
-import auto.atom.yandexmapdownloadmanager.map.OfflineMapsManager
+import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.map.toOfflineRegion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,7 @@ class AndroidViewModel {
     private val _uiState = MutableStateFlow(AndroidUiState())
     val uiState: StateFlow<AndroidUiState> = _uiState.asStateFlow()
 
-    private val offlineMapsManager = OfflineMapsManager()
+    private val offlineYandexMapsManager = OfflineYandexMapsManager()
     private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
     val regions: StateFlow<List<OfflineRegion>> = _regions
 
@@ -80,7 +80,7 @@ class AndroidViewModel {
                             // Старт обработки команд от сервера
                             AndroidProtocolHandler(
                                 client.currentConnection!!,
-                                offlineMapsManager
+                                offlineYandexMapsManager
                             ).run()
                         }
                     }
@@ -128,7 +128,7 @@ class AndroidViewModel {
      * Получение списка регионов из менеджера офлайн-карт в своем формате.
      */
     fun loadRegions() {
-        offlineMapsManager.loadRegions { regions ->
+        offlineYandexMapsManager.loadRegions { regions ->
             _regions.value = regions.toOfflineRegion()
         }
     }

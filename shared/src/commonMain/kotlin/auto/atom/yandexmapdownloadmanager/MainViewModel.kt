@@ -1,5 +1,8 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
+import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.Connection
@@ -26,6 +29,8 @@ class MainViewModel {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var protocolSession: DesktopProtocolSession? = null
+
+    private var protocolApi: DesktopProtocolApi? = null
     private val server = KtorTcpServer(
         host = "0.0.0.0",
         port = Protocol.PORT
@@ -76,6 +81,8 @@ class MainViewModel {
 
                 protocolSession = DesktopProtocolSession(connection!!)
                 protocolSession!!.start()
+
+                protocolApi = DesktopProtocolApiImpl(protocolSession!!)
 
                 _uiState.value = _uiState.value.copy(
                     isClientConnected = true,
@@ -134,6 +141,8 @@ class MainViewModel {
                 status = "Остановка сервера..."
             )
 
+            protocolApi = null
+
             protocolSession?.stop()
             protocolSession = null
 
@@ -157,6 +166,7 @@ class MainViewModel {
      */
     fun shutdown() {
         runBlocking {
+            protocolApi = null
 
             runCatching {
                 protocolSession?.stop()
@@ -176,4 +186,35 @@ class MainViewModel {
             scope.cancel()
         }
     }
+
+
+    private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
+    val regions: StateFlow<List<OfflineRegion>> = _regions.asStateFlow()
+
+    fun loadRegions() {
+        scope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isBusy = true,
+                    status = "Получение списка регионов..."
+                )
+
+                _regions.value = requireNotNull(protocolApi).getRegions()
+
+                _uiState.value = _uiState.value.copy(
+                    isBusy = false,
+                    status = "Получено регионов: ${_regions.value.size}"
+                )
+
+            } catch (e: Exception) {
+
+                _uiState.value = _uiState.value.copy(
+                    isBusy = false,
+                    status = e.message ?: "Ошибка получения списка регионов"
+                )
+            }
+        }
+    }
 }
+
+

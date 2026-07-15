@@ -2,9 +2,12 @@ package auto.atom.yandexmapdownloadmanager.transport
 
 import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import io.ktor.network.sockets.Socket
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -23,6 +26,13 @@ internal class KtorConnection(
     private val socket: Socket,
     private val frameIO: FrameIO
 ) : Connection {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun sendAsync(packet: Packet) {
+        scope.launch {
+            send(packet)
+        }
+    }
 
     private val _isConnected = MutableStateFlow(true)
 

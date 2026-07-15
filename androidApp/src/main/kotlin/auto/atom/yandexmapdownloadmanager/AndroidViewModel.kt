@@ -130,6 +130,10 @@ class AndroidViewModel {
     fun loadRegions() {
         offlineYandexMapsManager.loadRegions { regions ->
             _regions.value = regions.toOfflineRegion()
+
+            regions.forEach {
+                println("${it.id} -> ${it.name}")
+            }
         }
     }
 

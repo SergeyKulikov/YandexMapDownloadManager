@@ -23,37 +23,26 @@ class GetRegionsHandler(
         request: Request,
         connection: Connection
     ) {
-
-        runCatching {
-
-            val regions = offlineYandexMapsManager.loadRegions()
-
-            connection.send(
-                Packet(
-                    message = Response(
-                        id = request.id,
-                        command = request.command,
-                        status = Status.OK,
-                        payload = ProtocolJson.encodeToJsonElement(
-                            RegionsPayload(
-                                regions.toOfflineRegion()
+        try {
+            offlineYandexMapsManager.loadRegions { regions ->
+                connection.sendAsync(
+                    Packet(
+                        message = Response(
+                            id = request.id,
+                            command = request.command,
+                            status = Status.OK,
+                            payload = ProtocolJson.encodeToJsonElement(
+                                RegionsPayload(
+                                    regions.toOfflineRegion()
+                                )
                             )
                         )
                     )
                 )
-            )
 
-        }.getOrElse {
-
-            connection.send(
-                Packet(
-                    message = Response(
-                        id = request.id,
-                        command = request.command,
-                        status = Status.ERROR
-                    )
-                )
-            )
+            }
+        } catch (ex: Exception) {
+            println(ex.stackTrace)
         }
     }
 }

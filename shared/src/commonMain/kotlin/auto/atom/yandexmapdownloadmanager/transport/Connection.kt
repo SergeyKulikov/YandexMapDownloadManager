@@ -44,6 +44,8 @@ interface Connection {
      */
     suspend fun send(message: Packet): Boolean
 
+    fun sendAsync(packet: Packet)
+
     /**
      * Ожидает получение следующего сообщения.
      *

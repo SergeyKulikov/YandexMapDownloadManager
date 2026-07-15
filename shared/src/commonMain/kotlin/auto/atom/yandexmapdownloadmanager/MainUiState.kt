@@ -9,7 +9,15 @@ package auto.atom.yandexmapdownloadmanager
  * UI не хранит собственных данных и отображает только значения,
  * содержащиеся в данном классе.
  */
+
+
+enum class Screen {
+    SERVER,
+    MAPS
+}
+
 data class MainUiState(
+    val screen: Screen = Screen.SERVER,
 
     /**
      * Признак запущенного TCP-сервера.

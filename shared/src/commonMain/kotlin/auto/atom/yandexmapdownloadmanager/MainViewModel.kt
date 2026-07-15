@@ -84,6 +84,17 @@ class MainViewModel {
 
                 protocolApi = DesktopProtocolApiImpl(protocolSession!!)
 
+                // protocolApi?.getRegions()?.let { regions ->
+                //     println(regions.toString())
+                // }
+                _regions.value = requireNotNull(protocolApi).getRegions()
+
+                _uiState.value = _uiState.value.copy(
+                    screen = Screen.MAPS,
+                    isClientConnected = true,
+                    status = "Получено регионов: ${_regions.value.size}"
+                )
+
                 _uiState.value = _uiState.value.copy(
                     isClientConnected = true,
                     status = "Клиент подключен"
@@ -214,6 +225,12 @@ class MainViewModel {
                 )
             }
         }
+    }
+
+    fun showServerScreen() {
+        _uiState.value = _uiState.value.copy(
+            screen = Screen.SERVER
+        )
     }
 }
 

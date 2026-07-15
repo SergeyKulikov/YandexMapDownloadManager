@@ -4,6 +4,11 @@ import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.offline_cache.OfflineCacheManager
 import com.yandex.mapkit.offline_cache.Region
 import com.yandex.mapkit.offline_cache.RegionListUpdatesListener
+import com.yandex.mapkit.offline_cache.RegionListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 /**
@@ -14,6 +19,7 @@ import java.lang.ref.WeakReference
  */
 class OfflineYandexMapsManager {
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val offlineCacheManager: OfflineCacheManager = MapKitFactory.getInstance().offlineCacheManager
     private val regionListUpdatesListener = RegionListUpdatesListener {
         onRegionsLoaded?.invoke(offlineCacheManager.regions())
@@ -38,17 +44,14 @@ class OfflineYandexMapsManager {
     ) {
         onRegionsLoaded = onLoaded
 
-        val regions = offlineCacheManager.regions()
+        scope.launch {
+            val regions = offlineCacheManager.regions()
 
-        if (regions.isNotEmpty()) {
-            onLoaded(regions)
+            if (regions.isNotEmpty()) {
+                onLoaded(regions)
+            }
         }
     }
-
-    fun loadRegions(): List<Region> {
-        return offlineCacheManager.regions()
-    }
-
 
     /**
      * Начинает загрузку региона.
@@ -84,4 +87,10 @@ class OfflineYandexMapsManager {
     fun remove(regionId: Int) {
         TODO("Будет реализовано следующим шагом")
     }
+
+
+
+
 }
+
+

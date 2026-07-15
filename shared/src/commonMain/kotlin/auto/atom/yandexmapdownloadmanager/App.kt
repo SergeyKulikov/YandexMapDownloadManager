@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun App(viewModel: MainViewModel) {
 
-    // val viewModel = androidx.compose.runtime.remember { MainViewModel() }
     val uiState by viewModel.uiState.collectAsState()
 
     MaterialTheme {
@@ -34,78 +33,13 @@ fun App(viewModel: MainViewModel) {
             modifier = Modifier.fillMaxSize()
         ) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .safeContentPadding()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            when (uiState.screen) {
 
-                Text(
-                    text = "Yandex Map Download Manager",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Screen.SERVER ->
+                    ServerScreen(viewModel)
 
-                Text(
-                    text = "Статус: ${uiState.status}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                Text(
-                    text = "Порт: ${uiState.serverPort}"
-                )
-
-                Text(
-                    text = if (uiState.isClientConnected)
-                        "Клиент: подключен"
-                    else
-                        "Клиент: отсутствует"
-                )
-
-                Text(
-                    text = "Операция: ${uiState.operation}"
-                )
-
-                uiState.progress?.let { progress ->
-                    LinearProgressIndicator(
-                        progress = { progress / 100f },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Text("$progress%")
-                }
-
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isBusy,
-                    onClick = {
-                        if (uiState.isServerRunning) {
-                            viewModel.stopServer()
-                        } else {
-                            viewModel.startServer()
-                        }
-                    }
-                ) {
-                    Text(
-                        when {
-                            uiState.isBusy && uiState.isServerRunning ->
-                                "Остановка..."
-
-                            uiState.isBusy ->
-                                "Запуск..."
-
-                            uiState.isServerRunning ->
-                                "Остановить сервер"
-
-                            else ->
-                                "Запустить сервер"
-                        }
-                    )
-                }
+                Screen.MAPS ->
+                    MapsScreen(viewModel)
             }
         }
     }

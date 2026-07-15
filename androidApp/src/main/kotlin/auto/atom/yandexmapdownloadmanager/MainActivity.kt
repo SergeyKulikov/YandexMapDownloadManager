@@ -14,8 +14,6 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -25,8 +23,8 @@ class MainActivity : ComponentActivity() {
         MapKitFactory.initialize(this)
         MapKitFactory.getInstance().onStart()
 
-        val viewModel = AndroidViewModel()
-        viewModel.loadRegions()
+        // val viewModel = AndroidViewModel()
+        // viewModel.loadRegions()
 
 
 

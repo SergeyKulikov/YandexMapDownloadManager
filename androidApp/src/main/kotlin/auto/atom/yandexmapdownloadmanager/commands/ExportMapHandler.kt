@@ -1,4 +1,4 @@
-package auto.atom.yandexmapdownloadmanager.command.handlers
+package auto.atom.yandexmapdownloadmanager.commands
 
 /**
  * Выполняет экспорт ранее загруженной карты.

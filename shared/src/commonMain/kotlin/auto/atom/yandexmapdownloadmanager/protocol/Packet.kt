@@ -17,11 +17,11 @@ import kotlinx.serialization.Serializable
  * Использование отдельного контейнера позволяет изменять протокол в
  * будущем, сохраняя совместимость между различными версиями приложений.
  *
- * @property version Версия протокола обмена данными.
+ * @property protocolVersion Версия протокола обмена данными.
  * @property message Передаваемое сообщение.
  */
 @Serializable
 data class Packet(
-    val version: Int = PROTOCOL_VERSION,
+    val protocolVersion: Int = PROTOCOL_VERSION,
     val message: Message
 )

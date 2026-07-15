@@ -68,7 +68,7 @@ class KtorTcpServer(
             return false
         }
 
-        if (request.message.protocolVersion != PROTOCOL_VERSION) {
+        if (request.protocolVersion != PROTOCOL_VERSION) {
             return false
         }
 
@@ -80,7 +80,6 @@ class KtorTcpServer(
             Packet(
                 message =
                     HelloResponse(
-                        protocolVersion = PROTOCOL_VERSION,
                         application = APPLICATION_NAME
                     )
             )

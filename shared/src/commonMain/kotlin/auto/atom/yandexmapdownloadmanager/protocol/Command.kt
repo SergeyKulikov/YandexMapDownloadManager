@@ -33,7 +33,7 @@ enum class Command {
     NONE,
 
     /** Проверка доступности удаленного приложения. */
-    PING,
+    // PING,
 
     /** Получение информации об Android-устройстве. */
     GET_DEVICE_INFO,

@@ -1,6 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
-import auto.atom.yandexmapdownloadmanager.protocol.Message
+import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import io.ktor.network.sockets.Socket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,10 +8,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * Реализация [Connection] поверх Ktor TCP-соединения.
+ * Реализация [Connection] поверх TCP-соединения Ktor.
  *
- * Использует [FrameIO] и [ProtocolJson].
- * Не содержит бизнес-логики.
+ * Отвечает исключительно за транспортный уровень:
+ * - сериализацию и десериализацию [Packet];
+ * - запись и чтение кадров через [FrameIO];
+ * - отслеживание состояния соединения;
+ * - освобождение сетевых ресурсов.
+ *
+ * Класс не содержит логики протокола и не анализирует содержимое
+ * передаваемых сообщений.
  */
 internal class KtorConnection(
     private val socket: Socket,
@@ -19,32 +25,53 @@ internal class KtorConnection(
 ) : Connection {
 
     private val _isConnected = MutableStateFlow(true)
+
+    /**
+     * Текущее состояние соединения.
+     */
     override val isConnected: StateFlow<Boolean> = _isConnected
 
-    override suspend fun send(message: Message): Boolean {
+    /**
+     * Отправляет пакет удаленной стороне.
+     *
+     * @param packet пакет протокола для передачи.
+     * @return true, если пакет успешно отправлен.
+     */
+    override suspend fun send(packet: Packet): Boolean {
+
         if (!_isConnected.value) {
             return false
         }
 
         return try {
+
             val json = ProtocolJson.encodeToString(
-                Message.serializer(),
-                message
+                Packet.serializer(),
+                packet
             )
 
             frameIO.writeFrame(json.encodeToByteArray())
 
             true
+
         } catch (_: Exception) {
+
             _isConnected.value = false
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }
+
             false
         }
     }
 
-    override suspend fun receive(): Message? {
+    /**
+     * Ожидает получение следующего пакета.
+     *
+     * @return полученный пакет или null,
+     * если соединение было закрыто.
+     */
+    override suspend fun receive(): Packet? {
 
         if (!_isConnected.value) {
             return null
@@ -55,29 +82,32 @@ internal class KtorConnection(
             val payload = frameIO.readFrame()
 
             ProtocolJson.decodeFromString(
-                Message.serializer(),
+                Packet.serializer(),
                 payload.decodeToString()
             )
 
         } catch (_: Exception) {
+
             _isConnected.value = false
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }
+
             null
         }
     }
 
     /**
-     * Закрывает соединение и все связанные ресурсы.
+     * Закрывает соединение и освобождает связанные ресурсы.
      */
     override suspend fun close() {
+
         withContext(Dispatchers.IO) {
+
             _isConnected.value = false
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }
         }
     }
-
 }

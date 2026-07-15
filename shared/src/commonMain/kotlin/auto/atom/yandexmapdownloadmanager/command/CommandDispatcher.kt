@@ -1,6 +1,7 @@
 package auto.atom.yandexmapdownloadmanager.command
 
 import auto.atom.yandexmapdownloadmanager.protocol.Command
+import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Request
 import auto.atom.yandexmapdownloadmanager.protocol.Response
 import auto.atom.yandexmapdownloadmanager.protocol.Status
@@ -102,10 +103,13 @@ class CommandDispatcher(
 
         if (handler == null) {
             connection.send(
-                Response(
-                    id = request.id,
-                    status = Status.ERROR,
-                    error = "Unsupported command: ${request.command}"
+                Packet(
+                    message = Response(
+                        id = request.id,
+                        command = request.command,
+                        status = Status.ERROR,
+                        error = "Unsupported command: ${request.command}"
+                    )
                 )
             )
             return
@@ -115,10 +119,13 @@ class CommandDispatcher(
             handler.execute(request, connection)
         } catch (e: Exception) {
             connection.send(
-                Response(
-                    id = request.id,
-                    status = Status.ERROR,
-                    error = e.message ?: "Internal error"
+                Packet(
+                    message = Response(
+                        id = request.id,
+                        command = Command.NONE,
+                        status = Status.ERROR,
+                        error = e.message ?: "Internal error"
+                    )
                 )
             )
         }

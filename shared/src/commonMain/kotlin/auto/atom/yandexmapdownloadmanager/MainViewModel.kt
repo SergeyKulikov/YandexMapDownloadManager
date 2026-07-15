@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
@@ -24,6 +25,7 @@ class MainViewModel {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private var protocolSession: DesktopProtocolSession? = null
     private val server = KtorTcpServer(
         host = "0.0.0.0",
         port = Protocol.PORT
@@ -72,10 +74,14 @@ class MainViewModel {
 
                 connection = server.waitForConnection()
 
+                protocolSession = DesktopProtocolSession(connection!!)
+                protocolSession!!.start()
+
                 _uiState.value = _uiState.value.copy(
                     isClientConnected = true,
                     status = "Клиент подключен"
                 )
+
 
                 connectionJob?.cancel()
 
@@ -128,6 +134,9 @@ class MainViewModel {
                 status = "Остановка сервера..."
             )
 
+            protocolSession?.stop()
+            protocolSession = null
+
             connectionJob?.cancel()
             connectionJob = null
 
@@ -148,6 +157,13 @@ class MainViewModel {
      */
     fun shutdown() {
         runBlocking {
+
+            runCatching {
+                protocolSession?.stop()
+            }
+
+            protocolSession = null
+
             runCatching {
                 connection?.close()
             }

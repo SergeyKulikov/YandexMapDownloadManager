@@ -1,29 +1,28 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
-import auto.atom.yandexmapdownloadmanager.protocol.Command
 import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.APPLICATION_NAME
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol.PROTOCOL_VERSION
-import auto.atom.yandexmapdownloadmanager.protocol.Request
-import auto.atom.yandexmapdownloadmanager.protocol.Response
-import auto.atom.yandexmapdownloadmanager.protocol.Status
-import auto.atom.yandexmapdownloadmanager.protocol.map.RegionsPayload
 import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.Socket
+import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.encodeToJsonElement
-import java.util.UUID
 
 /**
- * TCP-клиент для Android.
+ * TCP-клиент Android.
  *
- * Подключается к Desktop-серверу по протоколу TCP.
+ * Отвечает за:
+ * - установку TCP-соединения;
+ * - выполнение рукопожатия (handshake);
+ * - создание транспортного [Connection];
+ * - освобождение сетевых ресурсов.
+ *
+ * Класс не содержит логики протокола обмена командами.
  */
 class KtorTcpClient {
 
@@ -32,24 +31,27 @@ class KtorTcpClient {
     private var connection: Connection? = null
 
     /**
-     * Текущее соединение.
+     * Текущее активное соединение.
      */
     val currentConnection: Connection?
         get() = connection
 
     /**
-     * Устанавливает соединение с сервером.
+     * Подключается к Desktop-серверу.
      *
-     * @param host хост или IP-адрес сервера
-     * @param port порт сервера
-     * @return установленное соединение
+     * После установки TCP-соединения выполняется рукопожатие
+     * с проверкой совместимости протокола.
+     *
+     * @param host адрес Desktop.
+     * @param port TCP-порт.
+     *
+     * @return установленное соединение.
      */
     suspend fun connect(
         host: String,
         port: Int
     ): Connection = withContext(Dispatchers.IO) {
 
-        // если старое соединение осталось — корректно закрываем
         close()
 
         try {
@@ -70,7 +72,6 @@ class KtorTcpClient {
                 frameIO = frameIO
             )
 
-
             handshake(newConnection)
 
             connection = newConnection
@@ -85,46 +86,40 @@ class KtorTcpClient {
         }
     }
 
-
-    private suspend fun handshake(connection: Connection) {
+    /**
+     * Выполняет рукопожатие с Desktop.
+     */
+    private suspend fun handshake(
+        connection: Connection
+    ) {
 
         connection.send(
             Packet(
-                message = Request(
-                    id = UUID.randomUUID().toString(),
-                    command = Command.PING,
-                    payload = ProtocolJson.encodeToJsonElement(
-                        HelloRequest(
-                            protocolVersion = PROTOCOL_VERSION,
-                            application = APPLICATION_NAME
-                        )
-                    )
+                message = HelloRequest(
+                    application = APPLICATION_NAME
                 )
             )
         )
 
         val response = connection.receive()
 
-        require(response?.message is HelloResponse)
-        {
+        require(response?.message is HelloResponse) {
             "Invalid handshake response"
         }
 
-        require(response.message.protocolVersion == PROTOCOL_VERSION)
-        {
-            "Unsupported protocol version: ${response.message.protocolVersion}"
+        require(response.protocolVersion == PROTOCOL_VERSION) {
+            "Unsupported protocol version: ${response.protocolVersion}"
         }
 
-        require(response.message.application == APPLICATION_NAME)
-        {
+        require(response.message.application == APPLICATION_NAME) {
             "Unknown server: ${response.message.application}"
         }
     }
 
     /**
-     * Закрывает соединение и освобождает все ресурсы.
+     * Закрывает соединение и освобождает все сетевые ресурсы.
      *
-     * Безопасно вызывать перед уничтожением объекта.
+     * Метод безопасно вызывать многократно.
      */
     suspend fun close() = withContext(Dispatchers.IO) {
 
@@ -146,9 +141,8 @@ class KtorTcpClient {
     }
 
     /**
-     * Проверяет, подключен ли клиент.
+     * Возвращает состояние соединения.
      */
     fun isConnected(): Boolean =
         connection?.isConnected?.value == true
-
 }

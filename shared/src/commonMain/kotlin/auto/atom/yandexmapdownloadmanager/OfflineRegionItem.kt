@@ -1,15 +1,25 @@
 package auto.atom.yandexmapdownloadmanager
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.calendar
@@ -27,136 +37,249 @@ fun OfflineRegionItem(
     formatDate: (Long) -> String
 ) {
 
+    var expanded by rememberSaveable(region.id) {
+        mutableStateOf(true)
+    }
+
     Column {
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = (level * 24).dp,
-                    top = 6.dp,
-                    bottom = 6.dp,
-                    end = 12.dp
-                ),
-            elevation = CardDefaults.cardElevation(2.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Spacer(
+                modifier = Modifier.width((12 + level * 20).dp)
+            )
 
-            Column {
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(
+                        end = 12.dp,
+                        top = 6.dp,
+                        bottom = 6.dp
+                    ),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 3.dp
+                )
+            ) {
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column {
 
-                    RegionTreeIcon(region)
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Image(
-                        painter = painterResource(Res.drawable.folder),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 76.dp)
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 12.dp
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        Text(
-                            text = region.name,
-                            style = MaterialTheme.typography.titleMedium
+                        RegionTreeIcon(
+                            region = region,
+                            expanded = expanded,
+                            onExpandedChange = {
+                                expanded = it
+                            }
                         )
 
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.width(8.dp))
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        Image(
+                            painter = painterResource(Res.drawable.folder),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp)
+                        )
+
+                        Spacer(Modifier.width(14.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f)
                         ) {
 
-                            Image(
-                                painter = painterResource(Res.drawable.storage),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-
-                            Spacer(Modifier.width(4.dp))
-
                             Text(
-                                text = formatSize(region.size),
-                                style = MaterialTheme.typography.bodySmall
+                                text = region.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1
                             )
 
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.height(6.dp))
 
-                            Image(
-                                painter = painterResource(Res.drawable.calendar),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
 
-                            Spacer(Modifier.width(4.dp))
+                                Image(
+                                    painter = painterResource(Res.drawable.storage),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
 
-                            Text(
-                                text = formatDate(region.releaseTime),
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                                Spacer(Modifier.width(4.dp))
+
+                                Text(
+                                    text = formatSize(region.size),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Spacer(Modifier.width(12.dp))
+
+                                Text("•")
+
+                                Spacer(Modifier.width(12.dp))
+
+                                Image(
+                                    painter = painterResource(Res.drawable.calendar),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+
+                                Spacer(Modifier.width(4.dp))
+
+                                Text(
+                                    text = formatDate(region.releaseTime),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
+
+                        RegionDownloadButton(
+                            region = region,
+                            onClick = {
+                                onDownloadClick(region)
+                            }
+                        )
                     }
+                    region.downloadProgress?.let { progress ->
 
-                    RegionDownloadButton(
-                        region = region,
-                        onClick = {
-                            onDownloadClick(region)
+                        Column(
+                            modifier = Modifier.padding(
+                                start = 64.dp,
+                                end = 24.dp,
+                                bottom = 18.dp
+                            )
+                        ) {
+
+                            Text(
+                                text = "Загрузка...",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            LinearProgressIndicator(
+                                progress = { progress / 100f },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = "$progress%",
+                                modifier = Modifier.align(Alignment.End),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
-                    )
-                }
-
-                region.downloadProgress?.let { progress ->
-
-                    Column(
-                        modifier = Modifier.padding(
-                            start = 56.dp,
-                            end = 16.dp,
-                            bottom = 16.dp
-                        )
-                    ) {
-
-                        Text(
-                            text = "Загрузка...",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        Spacer(Modifier.height(6.dp))
-
-                        LinearProgressIndicator(
-                            progress = { progress / 100f },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        Text(
-                            text = "$progress%",
-                            modifier = Modifier.align(Alignment.End)
-                        )
                     }
                 }
             }
         }
 
-        region.children.forEach { child ->
+        if (region.children.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
 
-            OfflineRegionItem(
-                region = child,
-                level = level + 1,
-                onDownloadClick = onDownloadClick,
-                formatSize = formatSize,
-                formatDate = formatDate
-            )
+                Column {
+
+                    region.children.forEach { child ->
+
+                        OfflineRegionItem(
+                            region = child,
+                            level = level + 1,
+                            onDownloadClick = onDownloadClick,
+                            formatSize = formatSize,
+                            formatDate = formatDate
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun TreeIndent(
+    level: Int,
+    expanded: Boolean,
+    hasChildren: Boolean
+) {
+
+    val width = (level * 32 + 36).dp
+
+    Box(
+        modifier = Modifier
+            .width(width)
+            .fillMaxHeight()
+            .drawBehind {
+
+                val lineColor = Color(0xFFD8DEE9)
+
+                val step = 32.dp.toPx()
+                val start = 18.dp.toPx()
+
+                repeat(level) { index ->
+
+                    val x = start + index * step
+
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(x, 0f),
+                        end = Offset(x, size.height),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+
+                if (level > 0) {
+
+                    val x = start + level * step
+
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(
+                            x,
+                            size.height / 2
+                        ),
+                        end = Offset(
+                            x + 18.dp.toPx(),
+                            size.height / 2
+                        ),
+                        strokeWidth = 1.dp.toPx()
+                    )
+
+                    if (hasChildren && expanded) {
+
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(
+                                x,
+                                size.height / 2
+                            ),
+                            end = Offset(
+                                x,
+                                size.height
+                            ),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                }
+            }
+    )
 }

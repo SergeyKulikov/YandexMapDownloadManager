@@ -1,11 +1,34 @@
 package auto.atom.yandexmapdownloadmanager
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import atomyandexmapmanager.shared.generated.resources.Res
+import atomyandexmapmanager.shared.generated.resources.delete
+import atomyandexmapmanager.shared.generated.resources.download
+import atomyandexmapmanager.shared.generated.resources.pause
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun RegionDownloadButton(
@@ -13,32 +36,114 @@ fun RegionDownloadButton(
     onClick: () -> Unit
 ) {
 
-    val (text, colors) = when (region.state) {
+    when (region.state) {
 
-        RegionState.NOT_DOWNLOADED ->
-            "Скачать" to ButtonDefaults.buttonColors()
+        RegionState.NOT_DOWNLOADED -> {
 
-        RegionState.DOWNLOADING ->
-            "Отмена" to ButtonDefaults.outlinedButtonColors()
-
-        RegionState.DOWNLOADED ->
-            "Удалить" to ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
+            RegionActionButton(
+                text = "Скачать",
+                icon = Res.drawable.download,
+                color = Color(0xFF2F80ED),
+                onClick = onClick
             )
+        }
 
-        RegionState.PAUSED ->
-            "Продолжить" to ButtonDefaults.buttonColors()
+        RegionState.DOWNLOADING -> {
 
-        RegionState.ERROR ->
-            "Повторить" to ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error
+            RegionActionButton(
+                text = "Отмена",
+                icon = Res.drawable.pause,
+                color = Color(0xFF4CAF50),
+                onClick = onClick
             )
+        }
+
+        RegionState.DOWNLOADED -> {
+
+            RegionActionButton(
+                text = "Удалить",
+                icon = Res.drawable.delete,
+                color = Color(0xFF4CAF50),
+                onClick = onClick
+            )
+        }
+
+        RegionState.PAUSED -> {
+
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .height(36.dp)
+                    .defaultMinSize(minWidth = 96.dp),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+
+                Text(
+                    text = "Продолжить",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+
+        RegionState.ERROR -> {
+
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .height(36.dp)
+                    .defaultMinSize(minWidth = 96.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+
+                Text(
+                    text = "Повторить",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
     }
+}
 
-    Button(
+@Composable
+fun RegionActionButton(
+    text: String,
+    icon: DrawableResource,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Surface(
         onClick = onClick,
-        colors = colors
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, color),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        modifier = Modifier
+            .height(44.dp)
+            .width(170.dp)
     ) {
-        Text(text)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+
+            Spacer(Modifier.width(10.dp))
+
+            Text(
+                text = text,
+                color = color,
+                style = MaterialTheme.typography.titleSmall
+            )
+        }
     }
 }

@@ -9,41 +9,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
+import atomyandexmapmanager.shared.generated.resources.chevron_right
 import atomyandexmapmanager.shared.generated.resources.collapse
 import atomyandexmapmanager.shared.generated.resources.expand
+import atomyandexmapmanager.shared.generated.resources.expand_more
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun RegionTreeIcon(
     region: OfflineRegion,
-    expanded: Boolean = true,
-    onExpandedChange: (Boolean) -> Unit = {}
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit
 ) {
-
     if (region.children.isEmpty()) {
         Spacer(
-            modifier = Modifier.width(40.dp)
+            modifier = Modifier.width(32.dp)
         )
         return
     }
 
     IconButton(
+        modifier = Modifier.size(32.dp),
         onClick = {
             onExpandedChange(!expanded)
         }
     ) {
-
         Image(
             painter = painterResource(
-                if (expanded) {
-                    Res.drawable.collapse
-                } else {
-                    Res.drawable.expand
-                }
+                if (expanded)
+                    Res.drawable.expand_more
+                else
+                    Res.drawable.chevron_right
             ),
             contentDescription = null,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
     }
 }

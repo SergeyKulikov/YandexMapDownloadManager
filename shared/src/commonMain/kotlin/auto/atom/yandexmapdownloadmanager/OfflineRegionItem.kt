@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.calendar
@@ -30,6 +31,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun OfflineRegionItem(
+    modifier: Modifier = Modifier,
     region: OfflineRegion,
     level: Int,
     onDownloadClick: (OfflineRegion) -> Unit,
@@ -38,21 +40,22 @@ fun OfflineRegionItem(
 ) {
 
     var expanded by rememberSaveable(region.id) {
-        mutableStateOf(true)
+        mutableStateOf(false)
     }
 
-    Column {
+    Column(
+        modifier = modifier
+    ) {
 
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row {
+
             Spacer(
                 modifier = Modifier.width((12 + level * 20).dp)
             )
 
             Card(
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(
                         end = 12.dp,
                         top = 6.dp,
@@ -93,7 +96,10 @@ fun OfflineRegionItem(
                         Image(
                             painter = painterResource(Res.drawable.folder),
                             contentDescription = null,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(28.dp),
+                            colorFilter = ColorFilter.tint(
+                                MaterialTheme.colorScheme.primary
+                            )
                         )
 
                         Spacer(Modifier.width(14.dp))

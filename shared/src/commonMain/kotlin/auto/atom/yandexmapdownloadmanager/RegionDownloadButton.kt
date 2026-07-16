@@ -14,13 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.delete
@@ -43,7 +43,7 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Скачать",
                 icon = Res.drawable.download,
-                color = Color(0xFF2F80ED),
+                color = MaterialTheme.colorScheme.primary,
                 onClick = onClick
             )
         }
@@ -53,7 +53,7 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Отмена",
                 icon = Res.drawable.pause,
-                color = Color(0xFF4CAF50),
+                color = MaterialTheme.colorScheme.tertiary,
                 onClick = onClick
             )
         }
@@ -63,7 +63,7 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Удалить",
                 icon = Res.drawable.delete,
-                color = Color(0xFF4CAF50),
+                color = MaterialTheme.colorScheme.error,
                 onClick = onClick
             )
         }
@@ -75,7 +75,10 @@ fun RegionDownloadButton(
                 modifier = Modifier
                     .height(36.dp)
                     .defaultMinSize(minWidth = 96.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
 
                 Text(
@@ -108,16 +111,20 @@ fun RegionDownloadButton(
 }
 
 @Composable
-fun RegionActionButton(
+private fun RegionActionButton(
     text: String,
     icon: DrawableResource,
     color: Color,
     onClick: () -> Unit
 ) {
+
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, color),
+        border = BorderStroke(
+            width = 1.dp,
+            color = color
+        ),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -125,6 +132,7 @@ fun RegionActionButton(
             .height(44.dp)
             .width(170.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.Center,
@@ -134,10 +142,13 @@ fun RegionActionButton(
             Image(
                 painter = painterResource(icon),
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
+                colorFilter = ColorFilter.tint(color)
             )
 
-            Spacer(Modifier.width(10.dp))
+            Spacer(
+                modifier = Modifier.width(10.dp)
+            )
 
             Text(
                 text = text,

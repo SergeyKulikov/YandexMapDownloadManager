@@ -21,13 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import auto.atom.yandexmapdownloadmanager.ui.theme.YandexMapManagerTheme
 
 @Composable
 fun App(viewModel: MainViewModel) {
 
     val uiState by viewModel.uiState.collectAsState()
 
-    MaterialTheme {
+    YandexMapManagerTheme {
 
         Surface(
             modifier = Modifier.fillMaxSize()

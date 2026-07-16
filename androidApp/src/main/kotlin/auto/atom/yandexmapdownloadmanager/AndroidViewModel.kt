@@ -5,7 +5,7 @@ import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpClient
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
-import auto.atom.yandexmapdownloadmanager.map.toOfflineRegion
+import auto.atom.yandexmapdownloadmanager.map.toOfflineRegionTree
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -129,7 +129,7 @@ class AndroidViewModel {
      */
     fun loadRegions() {
         offlineYandexMapsManager.loadRegions { regions ->
-            _regions.value = regions.toOfflineRegion()
+            _regions.value = regions.toOfflineRegionTree()
 
             regions.forEach {
                 println("${it.id} -> ${it.name}")

@@ -2,7 +2,8 @@ package auto.atom.yandexmapdownloadmanager.commands
 
 import auto.atom.yandexmapdownloadmanager.command.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
-import auto.atom.yandexmapdownloadmanager.map.toOfflineRegion
+import auto.atom.yandexmapdownloadmanager.map.filterRussiaRegions
+import auto.atom.yandexmapdownloadmanager.map.toOfflineRegionTree
 import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Request
 import auto.atom.yandexmapdownloadmanager.protocol.Response
@@ -33,7 +34,7 @@ class GetRegionsHandler(
                             status = Status.OK,
                             payload = ProtocolJson.encodeToJsonElement(
                                 RegionsPayload(
-                                    regions.toOfflineRegion()
+                                    regions.toOfflineRegionTree().filterRussiaRegions()
                                 )
                             )
                         )

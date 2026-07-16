@@ -1,5 +1,7 @@
 package auto.atom.yandexmapdownloadmanager.map
 
+import auto.atom.yandexmapdownloadmanager.protocol.CountryGeoID
+import auto.atom.yandexmapdownloadmanager.protocol.OfflineRussiaRegion
 import com.yandex.mapkit.offline_cache.Region
 
 fun buildTree(
@@ -14,6 +16,7 @@ fun buildTree(
                 parentId = region.parentId,
                 name = region.name,
                 country = region.country,
+                releaseTime = region.releaseTime,
                 size = region.size.value.toLong()
             )
         )
@@ -37,9 +40,9 @@ fun buildTree(
 
 
 /**
- * Строит дерево регионов из списка MapKit.
+ * Строит дерево регионов из списка MapKit по всем странам.
  */
-fun List<Region>.toOfflineRegion(): List<OfflineRegion> {
+fun List<Region>.toOfflineRegionTree(): List<OfflineRegion> {
 
     val nodes = this.associate { region ->
 
@@ -48,6 +51,7 @@ fun List<Region>.toOfflineRegion(): List<OfflineRegion> {
             parentId = region.parentId,
             name = region.name,
             country = region.country,
+            releaseTime = region.releaseTime,
             size = region.size.value.toLong()
         )
     }
@@ -68,4 +72,22 @@ fun List<Region>.toOfflineRegion(): List<OfflineRegion> {
     }
 
     return roots
+}
+
+/**
+ * Оставляет только корневые офлайн-регионы России.
+ */
+fun List<OfflineRegion>.filterRussiaRegions(): List<OfflineRegion> {
+
+    val russianIds = OfflineRussiaRegion.entries
+        .map(OfflineRussiaRegion::id)
+        .toSet()
+
+    return mapNotNull { region ->
+        if (region.id in russianIds) {
+            region.copy(parentId = CountryGeoID.RUSSIA.id)
+        } else {
+            null
+        }
+    }
 }

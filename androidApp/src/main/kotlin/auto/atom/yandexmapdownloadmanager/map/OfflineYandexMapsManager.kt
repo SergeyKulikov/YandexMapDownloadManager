@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.map
 
+import android.util.Log
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.offline_cache.OfflineCacheManager
 import com.yandex.mapkit.offline_cache.Region
@@ -10,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
+import com.google.gson.Gson
 
 /**
  * Работа с офлайн-картами MapKit.
@@ -46,6 +48,10 @@ class OfflineYandexMapsManager {
 
         scope.launch {
             val regions = offlineCacheManager.regions()
+
+            val reg = Gson().toJson(regions)
+
+            Log.d("REG",reg)
 
             if (regions.isNotEmpty()) {
                 onLoaded(regions)

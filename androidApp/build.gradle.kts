@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.compose.ui)
 
     implementation(libs.maps.mobile)
+    implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
 
     debugImplementation(libs.compose.uiTooling)

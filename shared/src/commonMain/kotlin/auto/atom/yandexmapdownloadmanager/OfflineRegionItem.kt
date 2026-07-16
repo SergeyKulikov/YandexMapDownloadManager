@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.calendar
 import atomyandexmapmanager.shared.generated.resources.folder
+import atomyandexmapmanager.shared.generated.resources.map
 import atomyandexmapmanager.shared.generated.resources.storage
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import org.jetbrains.compose.resources.painterResource
@@ -93,12 +94,20 @@ fun OfflineRegionItem(
 
                         Spacer(Modifier.width(8.dp))
 
+                        val isLeaf = region.children.isEmpty()
+
                         Image(
-                            painter = painterResource(Res.drawable.folder),
+                            painter = painterResource(
+                                if (isLeaf) Res.drawable.map
+                                else Res.drawable.folder
+                            ),
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
                             colorFilter = ColorFilter.tint(
-                                MaterialTheme.colorScheme.primary
+                                if (isLeaf)
+                                    MaterialTheme.colorScheme.secondary
+                                else
+                                    MaterialTheme.colorScheme.primary
                             )
                         )
 
@@ -156,6 +165,7 @@ fun OfflineRegionItem(
 
                         RegionDownloadButton(
                             region = region,
+                            level = level,
                             onClick = {
                                 onDownloadClick(region)
                             }

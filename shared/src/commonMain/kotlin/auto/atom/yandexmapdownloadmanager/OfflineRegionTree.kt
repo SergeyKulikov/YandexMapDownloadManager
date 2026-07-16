@@ -47,7 +47,7 @@ fun OfflineRegionTree(
                         top = 20.dp,
                         bottom = 12.dp
                     ),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )

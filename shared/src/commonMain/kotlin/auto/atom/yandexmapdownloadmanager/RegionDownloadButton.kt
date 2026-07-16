@@ -5,14 +5,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,8 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
+import atomyandexmapmanager.shared.generated.resources.cloud_download
 import atomyandexmapmanager.shared.generated.resources.delete
-import atomyandexmapmanager.shared.generated.resources.download
 import atomyandexmapmanager.shared.generated.resources.pause
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import org.jetbrains.compose.resources.DrawableResource
@@ -33,8 +30,15 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun RegionDownloadButton(
     region: OfflineRegion,
+    level: Int,
     onClick: () -> Unit
 ) {
+
+    val normalColor =
+        if (level == 0)
+            MaterialTheme.colorScheme.primary
+        else
+            MaterialTheme.colorScheme.secondary
 
     when (region.state) {
 
@@ -42,8 +46,8 @@ fun RegionDownloadButton(
 
             RegionActionButton(
                 text = "Скачать",
-                icon = Res.drawable.download,
-                color = MaterialTheme.colorScheme.primary,
+                icon = Res.drawable.cloud_download,
+                color = normalColor,
                 onClick = onClick
             )
         }
@@ -53,7 +57,7 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Отмена",
                 icon = Res.drawable.pause,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = normalColor,
                 onClick = onClick
             )
         }
@@ -70,42 +74,22 @@ fun RegionDownloadButton(
 
         RegionState.PAUSED -> {
 
-            Button(
-                onClick = onClick,
-                modifier = Modifier
-                    .height(36.dp)
-                    .defaultMinSize(minWidth = 96.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-
-                Text(
-                    text = "Продолжить",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+            RegionActionButton(
+                text = "Продолжить",
+                icon = Res.drawable.cloud_download,
+                color = normalColor,
+                onClick = onClick
+            )
         }
 
         RegionState.ERROR -> {
 
-            Button(
-                onClick = onClick,
-                modifier = Modifier
-                    .height(36.dp)
-                    .defaultMinSize(minWidth = 96.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-
-                Text(
-                    text = "Повторить",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+            RegionActionButton(
+                text = "Повторить",
+                icon = Res.drawable.cloud_download,
+                color = MaterialTheme.colorScheme.error,
+                onClick = onClick
+            )
         }
     }
 }

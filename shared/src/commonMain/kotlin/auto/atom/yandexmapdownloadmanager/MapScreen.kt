@@ -88,9 +88,10 @@ fun MapsScreen(
                 regions = countryRegions,
                 onDownloadClick = { region ->
                     // viewModel.downloadRegion(region)
-                }
+                },
+                formatSize = ::formatSize,
+                formatDate = ::formatDate
             )
-
         } else {
 
             Column(

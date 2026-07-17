@@ -13,5 +13,5 @@ data class OfflineRegion(
     val size: Long,
     val children: MutableList<OfflineRegion> = mutableListOf(),
     val state: RegionState = RegionState.NOT_DOWNLOADED,
-    val downloadProgress: Int? = null,
+    val downloadProgress: Float? = null,
 )

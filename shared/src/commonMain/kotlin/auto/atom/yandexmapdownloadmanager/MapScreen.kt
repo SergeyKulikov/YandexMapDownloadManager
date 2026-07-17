@@ -3,7 +3,6 @@ package auto.atom.yandexmapdownloadmanager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -87,7 +86,7 @@ fun MapsScreen(
             OfflineRegionTree(
                 regions = countryRegions,
                 onDownloadClick = { region ->
-                    // viewModel.downloadRegion(region)
+                    viewModel.downloadRegionById(region.id)
                 },
                 formatSize = ::formatSize,
                 formatDate = ::formatDate

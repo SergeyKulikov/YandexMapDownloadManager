@@ -12,6 +12,9 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.Inet4Address
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 /**
  * TCP-клиент Android.

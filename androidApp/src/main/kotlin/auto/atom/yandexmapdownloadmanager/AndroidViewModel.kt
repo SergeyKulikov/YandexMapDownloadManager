@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import android.util.Log
 import auto.atom.yandexmapdownloadmanager.map.AndroidProtocolHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
@@ -87,6 +88,9 @@ class AndroidViewModel {
             }
 
         } catch (e: Exception) {
+            e.printStackTrace()
+
+            Log.e("TCP", "Connect failed", e)
 
             _uiState.value = _uiState.value.copy(
                 isConnected = false,
@@ -127,6 +131,7 @@ class AndroidViewModel {
     /**
      * Получение списка регионов из менеджера офлайн-карт в своем формате.
      */
+    /*
     fun loadRegions() {
         offlineYandexMapsManager.loadRegions { regions ->
             _regions.value = regions.toOfflineRegionTree()
@@ -136,6 +141,7 @@ class AndroidViewModel {
             }
         }
     }
+    */
 
 
 }

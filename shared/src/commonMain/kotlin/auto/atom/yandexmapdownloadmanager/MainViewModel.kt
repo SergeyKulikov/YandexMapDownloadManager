@@ -84,16 +84,8 @@ class MainViewModel {
 
                 protocolApi = DesktopProtocolApiImpl(protocolSession!!)
 
-                // protocolApi?.getRegions()?.let { regions ->
-                //     println(regions.toString())
-                // }
-                _regions.value = requireNotNull(protocolApi).getRegions()
 
-                _uiState.value = _uiState.value.copy(
-                    screen = Screen.MAPS,
-                    isClientConnected = true,
-                    status = "Получено регионов: ${_regions.value.size}"
-                )
+                getRegionsFromClient()
 
                 _uiState.value = _uiState.value.copy(
                     isClientConnected = true,
@@ -138,6 +130,16 @@ class MainViewModel {
                 )
             }
         }
+    }
+
+    private suspend fun getRegionsFromClient() {
+        _regions.value = requireNotNull(protocolApi).getRegions()
+
+        _uiState.value = _uiState.value.copy(
+            screen = Screen.MAPS,
+            isClientConnected = true,
+            status = "Получено регионов: ${_regions.value.size}"
+        )
     }
 
     /**
@@ -202,6 +204,7 @@ class MainViewModel {
     private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
     val regions: StateFlow<List<OfflineRegion>> = _regions.asStateFlow()
 
+    /**
     fun loadRegions() {
         scope.launch {
             try {
@@ -225,12 +228,45 @@ class MainViewModel {
                 )
             }
         }
+
     }
+    */
 
     fun showServerScreen() {
         _uiState.value = _uiState.value.copy(
             screen = Screen.SERVER
         )
+    }
+
+
+    fun downloadRegionById(regionId: Int) {
+        scope.launch {
+
+            try {
+
+                requireNotNull(protocolApi).downloadRegion(regionId) { progress ->
+
+                    _regions.value = _regions.value.map { region ->
+
+                        if (region.id == regionId) {
+                            region.copy(
+                                downloadProgress = progress
+                            )
+                        } else {
+                            region
+                        }
+                    }
+                }
+
+                getRegionsFromClient()
+
+            } catch (e: Exception) {
+
+                _uiState.value = _uiState.value.copy(
+                    status = e.message ?: "Ошибка загрузки региона"
+                )
+            }
+        }
     }
 }
 

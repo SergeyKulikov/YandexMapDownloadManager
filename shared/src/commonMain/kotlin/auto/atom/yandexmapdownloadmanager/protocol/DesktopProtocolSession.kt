@@ -23,12 +23,21 @@ import java.util.concurrent.ConcurrentHashMap
 class DesktopProtocolSession(
     private val connection: Connection
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val scope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * Ожидающие ответы.
      */
-    private val pendingRequests = ConcurrentHashMap<String, CompletableDeferred<Response>>()
+    private val pendingRequests =
+        ConcurrentHashMap<String, CompletableDeferred<Response>>()
+
+    /**
+     * Колбэки прогресса.
+     */
+    private val progressCallbacks =
+        ConcurrentHashMap<String, (Progress) -> Unit>()
 
     private var receiveJob: Job? = null
 
@@ -36,6 +45,7 @@ class DesktopProtocolSession(
      * Запускает обработку входящих сообщений.
      */
     fun start() {
+
         if (receiveJob != null) {
             return
         }
@@ -58,6 +68,7 @@ class DesktopProtocolSession(
         }
 
         pendingRequests.clear()
+        progressCallbacks.clear()
 
         scope.cancel()
     }
@@ -66,12 +77,17 @@ class DesktopProtocolSession(
      * Отправляет запрос и ожидает ответ.
      */
     suspend fun execute(
-        request: Request
+        request: Request,
+        onProgress: ((Progress) -> Unit)? = null
     ): Response {
 
         val deferred = CompletableDeferred<Response>()
 
         pendingRequests[request.id] = deferred
+
+        if (onProgress != null) {
+            progressCallbacks[request.id] = onProgress
+        }
 
         try {
 
@@ -84,7 +100,9 @@ class DesktopProtocolSession(
             return deferred.await()
 
         } finally {
+
             pendingRequests.remove(request.id)
+            progressCallbacks.remove(request.id)
         }
     }
 
@@ -130,7 +148,8 @@ class DesktopProtocolSession(
     private fun handleProgress(
         progress: Progress
     ) {
-        // TODO
+
+        progressCallbacks[progress.id]?.invoke(progress)
     }
 
     /**
@@ -148,5 +167,6 @@ class DesktopProtocolSession(
         }
 
         pendingRequests.clear()
+        progressCallbacks.clear()
     }
 }

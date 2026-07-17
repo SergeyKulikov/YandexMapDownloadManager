@@ -1,17 +1,21 @@
 package auto.atom.yandexmapdownloadmanager.map
 
 import android.util.Log
+import com.google.gson.Gson
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.offline_cache.OfflineCacheManager
 import com.yandex.mapkit.offline_cache.Region
 import com.yandex.mapkit.offline_cache.RegionListUpdatesListener
 import com.yandex.mapkit.offline_cache.RegionListener
+import com.yandex.mapkit.offline_cache.RegionState
+import com.yandex.runtime.Error
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
-import com.google.gson.Gson
 
 /**
  * Работа с офлайн-картами MapKit.
@@ -21,20 +25,118 @@ import com.google.gson.Gson
  */
 class OfflineYandexMapsManager {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val offlineCacheManager: OfflineCacheManager = MapKitFactory.getInstance().offlineCacheManager
-    private val regionListUpdatesListener = RegionListUpdatesListener {
-        onRegionsLoaded?.invoke(offlineCacheManager.regions())
-    }
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main
+    )
+
+    private val offlineCacheManager: OfflineCacheManager =
+        MapKitFactory.getInstance().offlineCacheManager
 
     private var onRegionsLoaded: ((List<Region>) -> Unit)? = null
 
+    /**
+     * Изменился список регионов.
+     */
+    private val regionListUpdatesListener = RegionListUpdatesListener {
+
+        onRegionsLoaded?.invoke(
+            offlineCacheManager.regions()
+        )
+    }
+
+    /**
+     * Активные загрузки.
+     */
+    private val downloads =
+        mutableMapOf<Int, CompletableDeferred<Unit>>()
+
+    /**
+     * Колбэки прогресса.
+     */
+    private val progressCallbacks =
+        mutableMapOf<Int, (Float) -> Unit>()
+
+    /**
+     * Слушатель изменений состояния региона.
+     */
+    private val regionListener = object : RegionListener {
+        override fun onRegionStateChanged(regionId: Int) {
+            val state = offlineCacheManager.getState(regionId)
+
+            Log.d(
+                "OfflineMaps",
+                "Region $regionId state = $state"
+            )
+
+            when (state) {
+                RegionState.COMPLETED -> {
+                    downloads[regionId]?.complete(Unit)
+                }
+
+                RegionState.AVAILABLE,
+                RegionState.DOWNLOADING,
+                RegionState.PAUSED,
+                RegionState.OUTDATED,
+                RegionState.UNSUPPORTED,
+                RegionState.NEED_UPDATE -> {
+                    // Ждем дальнейших событий.
+                }
+            }
+        }
+
+        override fun onRegionProgress(regionId: Int) {
+            val progress = offlineCacheManager.getProgress(regionId)
+
+            progressCallbacks[regionId]?.invoke(progress)
+
+            Log.d(
+                "OfflineMaps",
+                "Region $regionId progress = $progress"
+            )
+        }
+    }
+
+    /**
+     * Слушатель ошибок загрузки.
+     */
+    private val errorListener = object : OfflineCacheManager.ErrorListener {
+
+        override fun onError(error: Error) {
+
+            Log.e(
+                "OfflineMaps",
+                error.toString()
+            )
+        }
+
+        override fun onRegionError(
+            error: Error,
+            regionId: Int
+        ) {
+
+            Log.e(
+                "OfflineMaps",
+                "Region $regionId error: $error"
+            )
+
+            downloads[regionId]?.completeExceptionally(
+                RuntimeException(error.toString())
+            )
+        }
+    }
+
     init {
-        /**
-         * Менеджер офлайн-карт MapKit.
-         */
+
         offlineCacheManager.addRegionListUpdatesListener(
             WeakReference(regionListUpdatesListener)
+        )
+
+        offlineCacheManager.addRegionListener(
+            WeakReference(regionListener)
+        )
+
+        offlineCacheManager.addErrorListener(
+            WeakReference(errorListener)
         )
     }
 
@@ -44,59 +146,101 @@ class OfflineYandexMapsManager {
     fun loadRegions(
         onLoaded: (List<Region>) -> Unit
     ) {
+
         onRegionsLoaded = onLoaded
 
         scope.launch {
+
             val regions = offlineCacheManager.regions()
 
-            val reg = Gson().toJson(regions)
+            Log.d(
+                "REG",
+                Gson().toJson(regions)
+            )
 
-            Log.d("REG",reg)
-
-            if (regions.isNotEmpty()) {
-                onLoaded(regions)
-            }
+            onLoaded(regions)
         }
     }
 
     /**
-     * Начинает загрузку региона.
+     * Начать загрузку региона.
      */
-    fun download(regionId: Int) {
-        TODO("Будет реализовано следующим шагом")
+    suspend fun download(
+        regionId: Int,
+        onProgress: (Float) -> Unit
+    ) {
+        val deferred = CompletableDeferred<Unit>()
+
+        downloads[regionId] = deferred
+        progressCallbacks[regionId] = onProgress
+
+        try {
+
+            withContext(Dispatchers.Main.immediate) {
+                offlineCacheManager.startDownload(regionId)
+            }
+
+            deferred.await()
+
+        } finally {
+
+            downloads.remove(regionId)
+            progressCallbacks.remove(regionId)
+        }
     }
 
     /**
-     * Приостанавливает загрузку.
+     * Приостановить загрузку.
      */
     fun pause(regionId: Int) {
-        TODO("Будет реализовано следующим шагом")
+        offlineCacheManager.pauseDownload(regionId)
     }
 
     /**
-     * Продолжает загрузку.
+     * Продолжить загрузку.
      */
     fun resume(regionId: Int) {
-        TODO("Будет реализовано следующим шагом")
+
+        offlineCacheManager.startDownload(regionId)
     }
 
     /**
-     * Отменяет загрузку.
+     * Отменить загрузку.
      */
     fun cancel(regionId: Int) {
-        TODO("Будет реализовано следующим шагом")
+
+        offlineCacheManager.stopDownload(regionId)
     }
 
     /**
-     * Удаляет регион.
+     * Удалить загруженный регион.
      */
     fun remove(regionId: Int) {
-        TODO("Будет реализовано следующим шагом")
+
+        offlineCacheManager.drop(regionId)
     }
 
+    /**
+     * Текущее состояние региона.
+     */
+    fun getState(regionId: Int): RegionState =
+        offlineCacheManager.getState(regionId)
 
+    /**
+     * Прогресс загрузки региона (0..100).
+     */
+    fun getProgress(regionId: Int): Float =
+        offlineCacheManager.getProgress(regionId)
 
+    /**
+     * Дата скачанной версии региона.
+     */
+    fun getDownloadedReleaseTime(regionId: Int): Long? =
+        offlineCacheManager.getDownloadedReleaseTime(regionId)
 
+    /**
+     * Возможно недостаточно свободного места.
+     */
+    fun mayBeOutOfAvailableSpace(regionId: Int): Boolean =
+        offlineCacheManager.mayBeOutOfAvailableSpace(regionId)
 }
-
-

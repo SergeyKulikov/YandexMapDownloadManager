@@ -1,9 +1,11 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.protocol.map.RegionPayload
 import auto.atom.yandexmapdownloadmanager.protocol.map.RegionsPayload
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import java.util.UUID
 
 /**
@@ -41,8 +43,30 @@ class DesktopProtocolApiImpl(
         ).regions
     }
 
-    override suspend fun downloadRegion(regionId: String) {
-        TODO("Not yet implemented")
+    /**
+     * Начинает загрузку региона.
+     */
+    override suspend fun downloadRegion(
+        regionId: Int,
+        onProgress: (Float) -> Unit
+    ) {
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.DOWNLOAD_REGION,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        ) { progress ->
+
+            onProgress(progress.progress)
+        }
+
+        check(response.status == Status.OK) {
+            response.error ?: "DOWNLOAD_REGION failed."
+        }
     }
 
     override suspend fun pauseRegion(regionId: String) {

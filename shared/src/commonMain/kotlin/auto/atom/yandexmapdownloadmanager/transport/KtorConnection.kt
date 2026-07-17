@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Реализация [Connection] поверх TCP-соединения Ktor.
@@ -28,6 +30,8 @@ internal class KtorConnection(
 ) : Connection {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val sendMutex = Mutex()
+
     override fun sendAsync(packet: Packet) {
         scope.launch {
             send(packet)
@@ -44,27 +48,33 @@ internal class KtorConnection(
     /**
      * Отправляет пакет удаленной стороне.
      *
-     * @param packet пакет протокола для передачи.
+     * @param message пакет протокола для передачи.
      * @return true, если пакет успешно отправлен.
      */
-    override suspend fun send(packet: Packet): Boolean {
-
+    override suspend fun send(message: Packet): Boolean = sendMutex.withLock {
         if (!_isConnected.value) {
             return false
         }
 
         return try {
-
             val json = ProtocolJson.encodeToString(
                 Packet.serializer(),
-                packet
+                message
             )
+
+            println(">>> SEND ${message::class.simpleName}")
+            println(json)
 
             frameIO.writeFrame(json.encodeToByteArray())
 
+            println(">>> SEND OK")
+
             true
 
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+
+            println(">>> SEND FAILED")
+            e.printStackTrace()
 
             _isConnected.value = false
 
@@ -91,12 +101,18 @@ internal class KtorConnection(
 
             val payload = frameIO.readFrame()
 
+            println("<<< RECV")
+            println(payload.decodeToString())
+
             ProtocolJson.decodeFromString(
                 Packet.serializer(),
                 payload.decodeToString()
             )
 
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+
+            println("<<< RECEIVE FAILED")
+            e.printStackTrace()
 
             _isConnected.value = false
 

@@ -4,7 +4,7 @@ import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 
 interface DesktopProtocolApi {
     suspend fun getRegions(): List<OfflineRegion>
-    suspend fun downloadRegion(regionId: String)
+    suspend fun downloadRegion(regionId: Int, onProgress: (Float) -> Unit)
     suspend fun pauseRegion(regionId: String)
     suspend fun resumeRegion(regionId: String)
     suspend fun cancelRegion(regionId: String)

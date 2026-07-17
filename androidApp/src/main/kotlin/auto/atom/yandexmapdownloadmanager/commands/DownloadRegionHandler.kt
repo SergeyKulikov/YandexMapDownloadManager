@@ -1,8 +1,10 @@
 package auto.atom.yandexmapdownloadmanager.commands
 
+import android.util.Log
 import auto.atom.yandexmapdownloadmanager.command.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.protocol.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.Progress
 import auto.atom.yandexmapdownloadmanager.protocol.Request
 import auto.atom.yandexmapdownloadmanager.protocol.Response
 import auto.atom.yandexmapdownloadmanager.protocol.Status
@@ -37,8 +39,9 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * Response(Status.OK)
  */
 class DownloadRegionHandler(
-    private val offlineManager: OfflineYandexMapsManager
+    private val offlineYandexMapsManager: OfflineYandexMapsManager
 ) : CommandHandler {
+
     override suspend fun execute(
         request: Request,
         connection: Connection
@@ -49,16 +52,54 @@ class DownloadRegionHandler(
                 request.payload!!
             )
 
-        offlineManager.download(payload.regionId)
+        try {
 
-        connection.send(
-            Packet(
-                message = Response(
-                    id = request.id,
-                    command = request.command,
-                    status = Status.OK
+            offlineYandexMapsManager.download(
+                regionId = payload.regionId
+            ) { progress ->
+
+                Log.d("PROTO", "Send Progress = $progress")
+
+                connection.sendAsync(
+                    Packet(
+                        message = Progress(
+                            id = request.id,
+                            progress = progress
+                        )
+                    )
+                )
+            }
+
+            Log.d("PROTO", "Download completed")
+
+            Log.d("PROTO", "Send Response OK")
+
+            connection.sendAsync(
+                Packet(
+                    message = Response(
+                        id = request.id,
+                        command = request.command,
+                        status = Status.OK
+                    )
                 )
             )
-        )
+
+            Log.d("PROTO", "Response queued")
+
+        } catch (e: Exception) {
+
+            Log.e("PROTO", "Download failed", e)
+
+            connection.sendAsync(
+                Packet(
+                    message = Response(
+                        id = request.id,
+                        command = request.command,
+                        status = Status.ERROR,
+                        error = e.message ?: "Unknown error"
+                    )
+                )
+            )
+        }
     }
 }

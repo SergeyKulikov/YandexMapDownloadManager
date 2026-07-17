@@ -28,18 +28,15 @@ import kotlinx.serialization.Serializable
  * ```
  *
  * @property id Идентификатор запроса.
- * @property percent Прогресс выполнения операции в диапазоне от 0 до 100.
+ * @property progress Прогресс выполнения операции в диапазоне от 0 до 100.
  *
- * @throws IllegalArgumentException если значение [percent] находится
+ * @throws IllegalArgumentException если значение [progress] находится
  * вне диапазона от 0 до 100.
  */
 @Serializable
 data class Progress(
     val id: String,
-    val percent: Int
+    val progress: Float
 ) : Message() {
 
-    init {
-        require(percent in 0..100)
-    }
 }

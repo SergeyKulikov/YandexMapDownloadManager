@@ -18,10 +18,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        MapKitFactory.setApiKey(BuildConfig.MAPKIT_API_KEY)
-        MapKitFactory.setLocale("ru_RU")
-        MapKitFactory.initialize(this)
-        MapKitFactory.getInstance().onStart()
+        MapKitFactory.setApiKey(BuildConfig.MAPKIT_API_KEY).apply {
+            MapKitFactory.setLocale("ru_RU")
+            MapKitFactory.initialize(this@MainActivity)
+            MapKitFactory.getInstance().onStart()
+        }
 
         // val viewModel = AndroidViewModel()
         // viewModel.loadRegions()

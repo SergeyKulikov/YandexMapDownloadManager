@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -26,3 +27,16 @@ fun formatDate(time: Long): String {
         Locale.getDefault()
     ).format(Date(time))
 }
+
+fun OfflineRegionState.localizedName(): String =
+    when (this) {
+        OfflineRegionState.AVAILABLE -> "Не загружен"
+        OfflineRegionState.DOWNLOADING -> "Загружается"
+        OfflineRegionState.PAUSED -> "Приостановлен"
+        OfflineRegionState.COMPLETED -> "Загружен"
+        OfflineRegionState.OUTDATED -> "Устарел"
+        OfflineRegionState.NEED_UPDATE -> "Требуется обновление"
+        OfflineRegionState.UNSUPPORTED -> "Не поддерживается"
+    }
+
+

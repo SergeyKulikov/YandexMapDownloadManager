@@ -24,7 +24,8 @@ fun App(viewModel: MainViewModel) {
                 Screen.SERVER ->
                     ServerScreen(viewModel)
 
-                Screen.MAPS ->
+                Screen.MAPS_HANDMADE,
+                Screen.MAPS_AUTO ->
                     MapsScreen(viewModel)
             }
         }

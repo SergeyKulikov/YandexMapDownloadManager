@@ -13,7 +13,16 @@ package auto.atom.yandexmapdownloadmanager.ui
 
 enum class Screen {
     SERVER,
-    MAPS
+
+    /**
+     * Ручное управление загрузкой регионов.
+     */
+    MAPS_HANDMADE,
+
+    /**
+     * Автоматическое обновление регионов.
+     */
+    MAPS_AUTO
 }
 
 data class MainUiState(

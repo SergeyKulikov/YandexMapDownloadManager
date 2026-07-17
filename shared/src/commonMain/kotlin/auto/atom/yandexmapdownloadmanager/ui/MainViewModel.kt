@@ -146,7 +146,7 @@ class MainViewModel {
         _regions.value = requireNotNull(protocolApi).getRegions()
 
         _uiState.value = _uiState.value.copy(
-            screen = Screen.MAPS,
+            screen = Screen.MAPS_HANDMADE,
             isClientConnected = true,
             status = "Получено регионов: ${_regions.value.size}"
         )
@@ -245,6 +245,18 @@ class MainViewModel {
     fun showServerScreen() {
         _uiState.value = _uiState.value.copy(
             screen = Screen.SERVER
+        )
+    }
+
+    fun showHandmadeMapsScreen() {
+        _uiState.value = _uiState.value.copy(
+            screen = Screen.MAPS_HANDMADE
+        )
+    }
+
+    fun showAutoMapsScreen() {
+        _uiState.value = _uiState.value.copy(
+            screen = Screen.MAPS_AUTO
         )
     }
 

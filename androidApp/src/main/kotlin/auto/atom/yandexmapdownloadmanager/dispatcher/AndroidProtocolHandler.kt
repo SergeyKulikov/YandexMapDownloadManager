@@ -12,7 +12,6 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.Command
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
@@ -86,7 +85,6 @@ class AndroidProtocolHandler(
                     dispatcher.dispatch(message, connection)
 
                 is Response,
-                is Progress,
                 is RegionStateNotification,
                 is RegionProgressNotification -> {
                     // Android не ожидает Response
@@ -115,7 +113,6 @@ class AndroidProtocolHandler(
                 }
 
                 is Response,
-                is Progress,
                 is RegionStateNotification,
                 is RegionProgressNotification -> {
                 }

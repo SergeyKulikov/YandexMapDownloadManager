@@ -105,6 +105,18 @@ internal class KtorConnection(
 
             true
 
+        } catch (e: java.io.EOFException) {
+
+            println(">>> Connection closed")
+
+            _isConnected.value = false
+            sendChannel.close()
+
+            runCatching { frameIO.close() }
+            runCatching { socket.close() }
+
+            false
+
         } catch (e: Exception) {
 
             println(">>> SEND FAILED")
@@ -146,6 +158,18 @@ internal class KtorConnection(
 
             return packet
 
+        } catch (e: java.io.EOFException) {
+
+            println("<<< Connection closed")
+
+            _isConnected.value = false
+            sendChannel.close()
+
+            runCatching { frameIO.close() }
+            runCatching { socket.close() }
+
+            null
+
         } catch (e: Exception) {
 
             println("<<< RECEIVE FAILED")
@@ -174,4 +198,6 @@ internal class KtorConnection(
             runCatching { socket.close() }
         }
     }
+
+
 }

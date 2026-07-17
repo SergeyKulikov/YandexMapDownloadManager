@@ -3,7 +3,6 @@ package auto.atom.yandexmapdownloadmanager.protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
@@ -46,8 +45,7 @@ class DesktopProtocolSession(
     /**
      * Колбэки прогресса.
      */
-    private val progressCallbacks =
-        ConcurrentHashMap<String, (Progress) -> Unit>()
+
 
     private var onRegionStateChanged: ((RegionStatePayload) -> Unit)? = null
 
@@ -82,7 +80,6 @@ class DesktopProtocolSession(
         }
 
         pendingRequests.clear()
-        progressCallbacks.clear()
 
         scope.cancel()
     }
@@ -104,8 +101,7 @@ class DesktopProtocolSession(
      * Отправляет запрос и ожидает ответ.
      */
     suspend fun execute(
-        request: Request,
-        onProgress: ((Progress) -> Unit)? = null
+        request: Request
     ): Response {
 
         println("EXECUTE ${request.command}")
@@ -113,10 +109,6 @@ class DesktopProtocolSession(
         val deferred = CompletableDeferred<Response>()
 
         pendingRequests[request.id] = deferred
-
-        if (onProgress != null) {
-            progressCallbacks[request.id] = onProgress
-        }
 
         try {
 
@@ -133,7 +125,6 @@ class DesktopProtocolSession(
         } finally {
 
             pendingRequests.remove(request.id)
-            progressCallbacks.remove(request.id)
         }
     }
 
@@ -152,11 +143,6 @@ class DesktopProtocolSession(
 
                     pendingRequests[message.id]
                         ?.complete(message)
-                }
-
-                is Progress -> {
-                    println("<<< PROGRESS ${message.progress}")
-                    handleProgress(message)
                 }
 
                 is RegionStateNotification -> {
@@ -188,16 +174,6 @@ class DesktopProtocolSession(
         connectionClosed()
     }
 
-    /**
-     * Обработка Progress.
-     */
-    private fun handleProgress(
-        progress: Progress
-    ) {
-
-        progressCallbacks[progress.id]?.invoke(progress)
-    }
-
     private fun handleRegionState(
         payload: RegionStatePayload
     ) {
@@ -226,7 +202,6 @@ class DesktopProtocolSession(
         }
 
         pendingRequests.clear()
-        progressCallbacks.clear()
 
         onRegionStateChanged = null
         onRegionProgressChanged = null

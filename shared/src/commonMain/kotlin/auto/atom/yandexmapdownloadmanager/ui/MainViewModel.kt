@@ -254,12 +254,8 @@ class MainViewModel {
                 when (region.state) {
 
                     OfflineRegionState.AVAILABLE -> {
-                        requireNotNull(protocolApi).downloadRegion(region.id) { progress ->
-
-                            _regions.value = _regions.value.map {
-                                it.updateProgress(region.id, progress)
-                            }
-                        }
+                        requireNotNull(protocolApi)
+                            .downloadRegion(region.id)
                     }
 
                     OfflineRegionState.DOWNLOADING -> {

@@ -50,8 +50,7 @@ class DesktopProtocolApiImpl(
      * Начинает загрузку региона.
      */
     override suspend fun downloadRegion(
-        regionId: Int,
-        onProgress: (Float) -> Unit
+        regionId: Int
     ) {
 
         val response = session.execute(
@@ -62,16 +61,14 @@ class DesktopProtocolApiImpl(
                     RegionPayload(regionId)
                 )
             )
-        ) { progress ->
-            onProgress(progress.progress)
-        }
+        )
 
         check(response.status == Status.OK) {
             response.error ?: "DOWNLOAD_REGION failed."
         }
     }
 
-    /**
+            /**
      * Приостанавливает загрузку региона.
      */
     override suspend fun pauseRegion(regionId: Int) {

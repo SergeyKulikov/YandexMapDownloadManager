@@ -1,10 +1,10 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
-import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
-import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
-import auto.atom.yandexmapdownloadmanager.protocol.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.Protocol.APPLICATION_NAME
-import auto.atom.yandexmapdownloadmanager.protocol.Protocol.PROTOCOL_VERSION
+import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
+import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
+import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol.APPLICATION_NAME
+import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol.PROTOCOL_VERSION
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
@@ -12,9 +12,6 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.Inet4Address
-import java.net.InetAddress
-import java.net.InetSocketAddress
 
 /**
  * TCP-клиент Android.

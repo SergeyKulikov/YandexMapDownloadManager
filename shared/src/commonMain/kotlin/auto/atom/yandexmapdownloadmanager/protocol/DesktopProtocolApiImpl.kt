@@ -1,8 +1,11 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
-import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
-import auto.atom.yandexmapdownloadmanager.protocol.map.RegionPayload
-import auto.atom.yandexmapdownloadmanager.protocol.map.RegionsPayload
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.protocol.model.Command
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionsPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.Request
+import auto.atom.yandexmapdownloadmanager.protocol.model.Status
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement

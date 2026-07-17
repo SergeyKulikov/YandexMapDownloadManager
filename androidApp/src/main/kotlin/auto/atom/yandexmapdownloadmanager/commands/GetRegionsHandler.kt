@@ -1,14 +1,14 @@
 package auto.atom.yandexmapdownloadmanager.commands
 
-import auto.atom.yandexmapdownloadmanager.command.CommandHandler
+import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.map.filterRussiaRegions
 import auto.atom.yandexmapdownloadmanager.map.toOfflineRegionTree
-import auto.atom.yandexmapdownloadmanager.protocol.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.Request
-import auto.atom.yandexmapdownloadmanager.protocol.Response
-import auto.atom.yandexmapdownloadmanager.protocol.Status
-import auto.atom.yandexmapdownloadmanager.protocol.map.RegionsPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.model.Request
+import auto.atom.yandexmapdownloadmanager.protocol.model.Response
+import auto.atom.yandexmapdownloadmanager.protocol.model.Status
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionsPayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.serialization.json.encodeToJsonElement

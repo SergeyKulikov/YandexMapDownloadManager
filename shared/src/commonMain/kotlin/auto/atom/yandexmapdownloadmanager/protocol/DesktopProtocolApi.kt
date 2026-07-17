@@ -1,6 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
-import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 
 interface DesktopProtocolApi {
     suspend fun getRegions(): List<OfflineRegion>

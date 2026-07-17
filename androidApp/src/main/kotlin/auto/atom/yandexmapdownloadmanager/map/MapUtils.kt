@@ -1,19 +1,17 @@
 package auto.atom.yandexmapdownloadmanager.map
 
-import auto.atom.yandexmapdownloadmanager.OfflineRegionState
-import auto.atom.yandexmapdownloadmanager.protocol.CountryGeoID
-import auto.atom.yandexmapdownloadmanager.protocol.map.OfflineRussiaRegion
+import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
 import com.yandex.mapkit.offline_cache.Region
 import com.yandex.mapkit.offline_cache.RegionState
 
 fun buildTree(
     regions: List<Region>
-): List<OfflineRegionNode> {
+): List<auto.atom.yandexmapdownloadmanager.model.OfflineRegionNode> {
 
     val nodes = regions.associate { region ->
 
-        region.id to OfflineRegionNode(
-            region = OfflineRegion(
+        region.id to _root_ide_package_.auto.atom.yandexmapdownloadmanager.model.OfflineRegionNode(
+            region = _root_ide_package_.auto.atom.yandexmapdownloadmanager.model.OfflineRegion(
                 id = region.id,
                 parentId = region.parentId,
                 name = region.name,
@@ -24,7 +22,7 @@ fun buildTree(
         )
     }
 
-    val roots = mutableListOf<OfflineRegionNode>()
+    val roots = mutableListOf<auto.atom.yandexmapdownloadmanager.model.OfflineRegionNode>()
 
     nodes.values.forEach { node ->
 
@@ -44,11 +42,11 @@ fun buildTree(
 /**
  * Строит дерево регионов из списка MapKit по всем странам.
  */
-fun List<Region>.toOfflineRegionTree(status: Map<Int, RegionState>): List<OfflineRegion> {
+fun List<Region>.toOfflineRegionTree(status: Map<Int, RegionState>): List<auto.atom.yandexmapdownloadmanager.model.OfflineRegion> {
 
     val nodes = this.associate { region ->
 
-        region.id to OfflineRegion(
+        region.id to _root_ide_package_.auto.atom.yandexmapdownloadmanager.model.OfflineRegion(
             id = region.id,
             parentId = region.parentId,
             name = region.name,
@@ -59,7 +57,7 @@ fun List<Region>.toOfflineRegionTree(status: Map<Int, RegionState>): List<Offlin
         )
     }
 
-    val roots = mutableListOf<OfflineRegion>()
+    val roots = mutableListOf<auto.atom.yandexmapdownloadmanager.model.OfflineRegion>()
 
     nodes.values.forEach { region ->
 
@@ -80,15 +78,15 @@ fun List<Region>.toOfflineRegionTree(status: Map<Int, RegionState>): List<Offlin
 /**
  * Оставляет только корневые офлайн-регионы России.
  */
-fun List<OfflineRegion>.filterRussiaRegions(): List<OfflineRegion> {
+fun List<auto.atom.yandexmapdownloadmanager.model.OfflineRegion>.filterRussiaRegions(): List<auto.atom.yandexmapdownloadmanager.model.OfflineRegion> {
 
-    val russianIds = OfflineRussiaRegion.entries
-        .map(OfflineRussiaRegion::id)
+    val russianIds = _root_ide_package_.auto.atom.yandexmapdownloadmanager.model.OfflineRussiaRegion.entries
+        .map(_root_ide_package_.auto.atom.yandexmapdownloadmanager.model.OfflineRussiaRegion::id)
         .toSet()
 
     return mapNotNull { region ->
         if (region.id in russianIds) {
-            region.copy(parentId = CountryGeoID.RUSSIA.id)
+            region.copy(parentId = _root_ide_package_.auto.atom.yandexmapdownloadmanager.model.CountryGeoID.RUSSIA.id)
         } else {
             null
         }

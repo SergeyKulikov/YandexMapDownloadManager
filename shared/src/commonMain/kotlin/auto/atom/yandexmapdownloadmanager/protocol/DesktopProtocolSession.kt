@@ -1,6 +1,13 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
-import auto.atom.yandexmapdownloadmanager.protocol.map.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
+import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
+import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.Request
+import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

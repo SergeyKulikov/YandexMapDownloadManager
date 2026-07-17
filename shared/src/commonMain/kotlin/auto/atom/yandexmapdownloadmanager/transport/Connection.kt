@@ -1,6 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
-import auto.atom.yandexmapdownloadmanager.protocol.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import kotlinx.coroutines.flow.StateFlow
 
 /**

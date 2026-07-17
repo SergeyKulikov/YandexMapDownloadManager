@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import auto.atom.yandexmapdownloadmanager.ui.theme.YandexMapManagerTheme
 
 @Composable
-fun App(viewModel: MainViewModel) {
-
-    val uiState by viewModel.uiState.collectAsState()
+fun App(
+    viewModel: MainViewModel
+) {
 
     YandexMapManagerTheme {
 
@@ -19,15 +19,7 @@ fun App(viewModel: MainViewModel) {
             modifier = Modifier.fillMaxSize()
         ) {
 
-            when (uiState.screen) {
-
-                Screen.SERVER ->
-                    ServerScreen(viewModel)
-
-                Screen.MAPS_HANDMADE,
-                Screen.MAPS_AUTO ->
-                    MapsScreen(viewModel)
-            }
+            MainScreen(viewModel)
         }
     }
 }

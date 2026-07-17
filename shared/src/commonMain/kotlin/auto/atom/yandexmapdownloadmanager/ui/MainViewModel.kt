@@ -45,7 +45,11 @@ class MainViewModel {
      */
     private var connectionJob: Job? = null
 
-    private val _uiState = MutableStateFlow(MainUiState())
+    private val _uiState = MutableStateFlow(
+        MainUiState(
+            serverPort = Protocol.PORT
+        )
+    )
 
     /**
      * Текущее состояние пользовательского интерфейса.
@@ -257,6 +261,14 @@ class MainViewModel {
     fun showAutoMapsScreen() {
         _uiState.value = _uiState.value.copy(
             screen = Screen.MAPS_AUTO
+        )
+    }
+
+    fun showScreen(
+        screen: Screen
+    ) {
+        _uiState.value = _uiState.value.copy(
+            screen = screen
         )
     }
 

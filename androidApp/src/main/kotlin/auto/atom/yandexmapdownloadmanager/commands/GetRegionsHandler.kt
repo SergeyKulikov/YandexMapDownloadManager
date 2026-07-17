@@ -31,6 +31,17 @@ class GetRegionsHandler(
                     region.id to offlineYandexMapsManager.getState(region.id)
                 }
 
+                val progress = regions.mapNotNull { region ->
+
+                    when (states[region.id]) {
+                        com.yandex.mapkit.offline_cache.RegionState.DOWNLOADING,
+                        com.yandex.mapkit.offline_cache.RegionState.PAUSED ->
+                            region.id to offlineYandexMapsManager.getProgress(region.id)
+
+                        else -> null
+                    }
+                }.toMap()
+
                 connection.sendAsync(
                     Packet(
                         message = Response(
@@ -39,7 +50,7 @@ class GetRegionsHandler(
                             status = Status.OK,
                             payload = ProtocolJson.encodeToJsonElement(
                                 RegionsPayload(
-                                    regions.toOfflineRegionTree(states).filterRussiaRegions()
+                                    regions.toOfflineRegionTree(states, progress).filterRussiaRegions()
                                 )
                             )
                         )

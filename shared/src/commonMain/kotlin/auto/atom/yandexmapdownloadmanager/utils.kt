@@ -22,7 +22,7 @@ fun formatSize(bytes: Long): String {
 
 fun formatDate(time: Long): String {
     return SimpleDateFormat(
-        "dd.MM.yyyy",
+        "dd.MM.yyyy HH:mm",
         Locale.getDefault()
     ).format(Date(time))
 }

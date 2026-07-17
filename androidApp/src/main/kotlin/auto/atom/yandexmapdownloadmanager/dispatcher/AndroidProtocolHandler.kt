@@ -13,11 +13,17 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -28,6 +34,7 @@ class AndroidProtocolHandler(
     private val connection: Connection,
     private val offlineYandexMapsManager: OfflineYandexMapsManager
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
         offlineYandexMapsManager.setOnRegionStateChangedListener { regionId, state ->
@@ -38,6 +45,19 @@ class AndroidProtocolHandler(
                         payload = RegionStatePayload(
                             regionId = regionId,
                             state = state.toOfflineRegionState()
+                        )
+                    )
+                )
+            )
+        }
+
+        offlineYandexMapsManager.setOnRegionProgressChangedListener { regionId, progress ->
+            connection.sendAsync(
+                Packet(
+                    message = RegionProgressNotification(
+                        payload = RegionProgressPayload(
+                            regionId = regionId,
+                            progress = progress
                         )
                     )
                 )
@@ -55,7 +75,7 @@ class AndroidProtocolHandler(
         )
     )
 
-    suspend fun run() {
+    suspend fun runOld() {
 
         while (connection.isConnected.value) {
 
@@ -65,7 +85,10 @@ class AndroidProtocolHandler(
                 is Request ->
                     dispatcher.dispatch(message, connection)
 
-                is Response, is Progress, is RegionStateNotification -> {
+                is Response,
+                is Progress,
+                is RegionStateNotification,
+                is RegionProgressNotification -> {
                     // Android не ожидает Response
                     // Android не ожидает Progress
                 }
@@ -74,6 +97,32 @@ class AndroidProtocolHandler(
                     // HelloRequest/HelloResponse уже обработаны во время handshake()
                 }
 
+            }
+        }
+    }
+
+
+    suspend fun run() {
+        while (connection.isConnected.value) {
+
+            val packet = connection.receive() ?: break
+
+            when (val message = packet.message) {
+                is Request -> {
+                    scope.launch {
+                        dispatcher.dispatch(message, connection)
+                    }
+                }
+
+                is Response,
+                is Progress,
+                is RegionStateNotification,
+                is RegionProgressNotification -> {
+                }
+
+                is HelloRequest,
+                is HelloResponse -> {
+                }
             }
         }
     }

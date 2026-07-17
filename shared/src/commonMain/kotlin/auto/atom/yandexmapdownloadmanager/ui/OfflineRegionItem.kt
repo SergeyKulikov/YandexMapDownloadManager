@@ -28,6 +28,7 @@ import atomyandexmapmanager.shared.generated.resources.folder
 import atomyandexmapmanager.shared.generated.resources.map
 import atomyandexmapmanager.shared.generated.resources.storage
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.roundToInt
 
@@ -43,6 +44,40 @@ fun OfflineRegionItem(
 
     var expanded by rememberSaveable(region.id) {
         mutableStateOf(false)
+    }
+
+    var showProgress by remember(region.id) {
+        mutableStateOf(false)
+    }
+
+    var progressWasVisible by remember(region.id) {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(region.state) {
+
+        when (region.state) {
+
+            OfflineRegionState.DOWNLOADING,
+            OfflineRegionState.PAUSED -> {
+                showProgress = true
+                progressWasVisible = true
+            }
+
+            OfflineRegionState.COMPLETED -> {
+                if (progressWasVisible) {
+                    delay(700)
+                }
+
+                showProgress = false
+                progressWasVisible = false
+            }
+
+            else -> {
+                showProgress = false
+                progressWasVisible = false
+            }
+        }
     }
 
     Column(
@@ -172,7 +207,13 @@ fun OfflineRegionItem(
                             }
                         )
                     }
-                    region.downloadProgress?.let { progress ->
+
+                    AnimatedVisibility(
+                        visible = showProgress,
+                        enter = fadeIn(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        val progress = region.downloadProgress ?: 0f
                         val percent = (progress * 10000).roundToInt() / 100f
 
                         Column(

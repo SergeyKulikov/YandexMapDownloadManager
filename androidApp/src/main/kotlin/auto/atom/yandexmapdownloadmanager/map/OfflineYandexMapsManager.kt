@@ -52,6 +52,14 @@ class OfflineYandexMapsManager {
         onRegionStateChanged = listener
     }
 
+    private var onRegionProgressChanged: ((Int, Float) -> Unit)? = null
+
+    fun setOnRegionProgressChangedListener(
+        listener: (Int, Float) -> Unit
+    ) {
+        onRegionProgressChanged = listener
+    }
+
     /**
      * Активные загрузки.
      */
@@ -96,14 +104,28 @@ class OfflineYandexMapsManager {
             }
         }
 
+//        override fun onRegionProgress(regionId: Int) {
+//            val progress = offlineCacheManager.getProgress(regionId)
+//
+//            progressCallbacks[regionId]?.invoke(progress)
+//
+//            Log.d(
+//                "OfflineMaps",
+//                "Region $regionId progress = $progress"
+//            )
+//        }
+
         override fun onRegionProgress(regionId: Int) {
             val progress = offlineCacheManager.getProgress(regionId)
-
-            progressCallbacks[regionId]?.invoke(progress)
 
             Log.d(
                 "OfflineMaps",
                 "Region $regionId progress = $progress"
+            )
+
+            onRegionProgressChanged?.invoke(
+                regionId,
+                progress
             )
         }
     }
@@ -177,6 +199,24 @@ class OfflineYandexMapsManager {
     /**
      * Начать загрузку региона.
      */
+    suspend fun download(regionId: Int) {
+
+        val deferred = CompletableDeferred<Unit>()
+        downloads[regionId] = deferred
+
+        try {
+
+            withContext(Dispatchers.Main.immediate) {
+                offlineCacheManager.startDownload(regionId)
+            }
+
+            deferred.await()
+
+        } finally {
+            downloads.remove(regionId)
+        }
+    }
+    /*
     suspend fun download(
         regionId: Int,
         onProgress: (Float) -> Unit
@@ -200,43 +240,50 @@ class OfflineYandexMapsManager {
             progressCallbacks.remove(regionId)
         }
     }
+    */
 
     /**
      * Приостановить загрузку.
      */
-    fun pause(regionId: Int) {
-        offlineCacheManager.pauseDownload(regionId)
+    suspend fun pause(regionId: Int) {
+        withContext(Dispatchers.Main.immediate) {
+            offlineCacheManager.pauseDownload(regionId)
+        }
     }
 
     /**
      * Продолжить загрузку.
      */
-    fun resume(regionId: Int) {
-
-        offlineCacheManager.startDownload(regionId)
+    suspend fun resume(regionId: Int) {
+        withContext(Dispatchers.Main.immediate) {
+            offlineCacheManager.startDownload(regionId)
+        }
     }
 
     /**
      * Отменить загрузку.
      */
-    fun cancel(regionId: Int) {
-
-        offlineCacheManager.stopDownload(regionId)
+    suspend fun cancel(regionId: Int) {
+        withContext(Dispatchers.Main.immediate) {
+            offlineCacheManager.stopDownload(regionId)
+        }
     }
 
     /**
      * Удалить загруженный регион.
      */
-    fun remove(regionId: Int) {
-
-        offlineCacheManager.drop(regionId)
+    suspend fun remove(regionId: Int) {
+        withContext(Dispatchers.Main.immediate) {
+            offlineCacheManager.drop(regionId)
+        }
     }
 
     /**
      * Текущее состояние региона.
      */
-    fun getState(regionId: Int): RegionState =
-        offlineCacheManager.getState(regionId)
+    fun getState(regionId: Int): RegionState {
+        return offlineCacheManager.getState(regionId)
+    }
 
     /**
      * Прогресс загрузки региона (0..100).

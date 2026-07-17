@@ -5,6 +5,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
@@ -85,6 +86,10 @@ class MainViewModel {
 
                 protocolSession!!.setOnRegionStateChangedListener { payload ->
                     updateRegionState(payload)
+                }
+
+                protocolSession!!.setOnRegionProgressChangedListener {
+                    updateRegionProgress(it)
                 }
 
                 protocolApi = DesktopProtocolApiImpl(protocolSession!!)
@@ -243,40 +248,6 @@ class MainViewModel {
         )
     }
 
-
-    /*
-    fun downloadRegionById(regionId: Int) {
-        scope.launch {
-
-            try {
-
-                requireNotNull(protocolApi).downloadRegion(regionId) { progress ->
-
-                    _regions.value = _regions.value.map { region ->
-
-                        if (region.id == regionId) {
-                            region.copy(
-                                downloadProgress = progress
-                            )
-                        } else {
-                            region
-                        }
-                    }
-                }
-
-                getRegionsFromClient()
-
-            } catch (e: Exception) {
-
-                _uiState.value = _uiState.value.copy(
-                    status = e.message ?: "Ошибка загрузки региона"
-                )
-            }
-        }
-    }
-    */
-
-
     fun regionAction(region: OfflineRegion) {
         scope.launch {
             try {
@@ -286,11 +257,7 @@ class MainViewModel {
                         requireNotNull(protocolApi).downloadRegion(region.id) { progress ->
 
                             _regions.value = _regions.value.map {
-                                if (it.id == region.id) {
-                                    it.copy(downloadProgress = progress)
-                                } else {
-                                    it
-                                }
+                                it.updateProgress(region.id, progress)
                             }
                         }
                     }
@@ -329,12 +296,62 @@ class MainViewModel {
     private fun updateRegionState(
         payload: RegionStatePayload
     ) {
-        _regions.value = _regions.value.map { region ->
-            if (region.id == payload.regionId) {
-                region.copy(state = payload.state)
-            } else {
-                region
-            }
+        _regions.value = _regions.value.map {
+            it.updateState(
+                payload.regionId,
+                payload.state
+            )
+        }
+    }
+
+
+    private fun OfflineRegion.updateState(
+        regionId: Int,
+        state: OfflineRegionState
+    ): OfflineRegion {
+
+        val newChildren = children.map {
+            it.updateState(regionId, state)
+        }.toMutableList()
+
+        return if (id == regionId) {
+            copy(
+                state = state,
+                children = newChildren
+            )
+        } else {
+            copy(children = newChildren)
+        }
+    }
+
+    private fun OfflineRegion.updateProgress(
+        regionId: Int,
+        progress: Float
+    ): OfflineRegion {
+
+        val newChildren = children.map {
+            it.updateProgress(regionId, progress)
+        }.toMutableList()
+
+        return if (id == regionId) {
+            copy(
+                downloadProgress = progress,
+                children = newChildren
+            )
+        } else {
+            copy(children = newChildren)
+        }
+    }
+
+    private fun updateRegionProgress(
+        payload: RegionProgressPayload
+    ) {
+        println("UI PROGRESS ${payload.regionId} ${payload.progress}")
+        _regions.value = _regions.value.map {
+            it.updateProgress(
+                payload.regionId,
+                payload.progress
+            )
         }
     }
 }

@@ -4,6 +4,8 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
@@ -49,6 +51,8 @@ class DesktopProtocolSession(
 
     private var onRegionStateChanged: ((RegionStatePayload) -> Unit)? = null
 
+    private var onRegionProgressChanged: ((RegionProgressPayload) -> Unit)? = null
+
     private var receiveJob: Job? = null
 
     /**
@@ -90,6 +94,12 @@ class DesktopProtocolSession(
         onRegionStateChanged = listener
     }
 
+    fun setOnRegionProgressChangedListener(
+        listener: (RegionProgressPayload) -> Unit
+    ) {
+        onRegionProgressChanged = listener
+    }
+
     /**
      * Отправляет запрос и ожидает ответ.
      */
@@ -97,6 +107,8 @@ class DesktopProtocolSession(
         request: Request,
         onProgress: ((Progress) -> Unit)? = null
     ): Response {
+
+        println("EXECUTE ${request.command}")
 
         val deferred = CompletableDeferred<Response>()
 
@@ -113,6 +125,8 @@ class DesktopProtocolSession(
                     message = request
                 )
             )
+
+            println("REQUEST QUEUED ${request.command}")
 
             return deferred.await()
 
@@ -146,9 +160,20 @@ class DesktopProtocolSession(
                 }
 
                 is RegionStateNotification -> {
+                    println(
+                        "<<< REGION STATE ${message.payload.regionId} ${message.payload.state}"
+                    )
+
                     handleRegionState(message.payload)
                 }
 
+                is RegionProgressNotification -> {
+                    println(
+                        "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
+                    )
+
+                    handleRegionProgress(message.payload)
+                }
                 is Request -> {
                     // Desktop не принимает Request
                 }
@@ -179,6 +204,13 @@ class DesktopProtocolSession(
         onRegionStateChanged?.invoke(payload)
     }
 
+    private fun handleRegionProgress(
+        payload: RegionProgressPayload
+    ) {
+        println("<<< REGION PROGRESS ${payload.regionId} ${payload.progress}")
+        onRegionProgressChanged?.invoke(payload)
+    }
+
     /**
      * Соединение закрыто.
      *
@@ -197,5 +229,6 @@ class DesktopProtocolSession(
         progressCallbacks.clear()
 
         onRegionStateChanged = null
+        onRegionProgressChanged = null
     }
 }

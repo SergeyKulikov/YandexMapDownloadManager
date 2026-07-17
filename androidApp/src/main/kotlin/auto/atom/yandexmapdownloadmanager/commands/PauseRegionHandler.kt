@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.commands
 
+import android.util.Log
 import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
@@ -22,6 +23,7 @@ class PauseRegionHandler(
         request: Request,
         connection: Connection
     ) {
+        Log.d("Protocol", "PAUSE request: ${request.payload}")
 
         val payload =
             ProtocolJson.decodeFromJsonElement<RegionPayload>(
@@ -31,6 +33,8 @@ class PauseRegionHandler(
         try {
 
             offlineYandexMapsManager.pause(payload.regionId)
+
+            Log.d("Protocol", "PAUSE request sent to yandex")
 
             connection.sendAsync(
                 Packet(
@@ -43,6 +47,7 @@ class PauseRegionHandler(
             )
 
         } catch (e: Exception) {
+            Log.e("Protocol", e.message.toString())
 
             connection.sendAsync(
                 Packet(

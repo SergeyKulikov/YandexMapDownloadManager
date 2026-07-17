@@ -75,6 +75,7 @@ class DesktopProtocolApiImpl(
      * Приостанавливает загрузку региона.
      */
     override suspend fun pauseRegion(regionId: Int) {
+        println("SEND PAUSE $regionId")
 
         val response = session.execute(
             Request(
@@ -85,6 +86,8 @@ class DesktopProtocolApiImpl(
                 )
             )
         )
+
+        println("PAUSE RESPONSE = ${response.status}")
 
         check(response.status == Status.OK) {
             response.error ?: "PAUSE_REGION_DOWNLOAD failed."

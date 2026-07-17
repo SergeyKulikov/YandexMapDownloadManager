@@ -4,39 +4,20 @@ import android.util.Log
 import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.model.Progress
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.protocol.model.Status
-import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
- * Выполняет загрузку карты Яндекса.
+ * Выполняет загрузку региона.
  *
- * Команда может выполняться продолжительное время.
- * Во время работы обработчик отправляет сообщения Progress,
- * позволяя Desktop отображать текущий прогресс загрузки.
- *
- * Схема работы:
- *
- * Desktop
- *    │
- *    ▼
- * Request(DOWNLOAD_MAP)
- *    │
- *    ▼
- * DownloadMapHandler
- *    │
- *    ├────────► Progress(3%)
- *    ├────────► Progress(14%)
- *    ├────────► Progress(42%)
- *    ├────────► Progress(76%)
- *    ├────────► Progress(100%)
- *    ▼
- * Response(Status.OK)
+ * Прогресс больше не отправляется отсюда.
+ * Он приходит через RegionProgressNotification,
+ * который рассылает AndroidProtocolHandler.
  */
 class DownloadRegionHandler(
     private val offlineYandexMapsManager: OfflineYandexMapsManager
@@ -54,25 +35,24 @@ class DownloadRegionHandler(
 
         try {
 
+            Log.d(
+                "PROTO",
+                "Start download region=${payload.regionId}"
+            )
+
             offlineYandexMapsManager.download(
-                regionId = payload.regionId
-            ) { progress ->
+                payload.regionId
+            )
 
-                Log.d("PROTO", "Send Progress = $progress")
+            Log.d(
+                "PROTO",
+                "Download completed"
+            )
 
-                connection.sendAsync(
-                    Packet(
-                        message = Progress(
-                            id = request.id,
-                            progress = progress
-                        )
-                    )
-                )
-            }
-
-            Log.d("PROTO", "Download completed")
-
-            Log.d("PROTO", "Send Response OK")
+            Log.d(
+                "PROTO",
+                "Send Response OK"
+            )
 
             connection.sendAsync(
                 Packet(
@@ -84,11 +64,18 @@ class DownloadRegionHandler(
                 )
             )
 
-            Log.d("PROTO", "Response queued")
+            Log.d(
+                "PROTO",
+                "Response queued"
+            )
 
         } catch (e: Exception) {
 
-            Log.e("PROTO", "Download failed", e)
+            Log.e(
+                "PROTO",
+                "Download failed",
+                e
+            )
 
             connection.sendAsync(
                 Packet(

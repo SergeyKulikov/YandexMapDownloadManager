@@ -29,3 +29,9 @@ data class RegionStatePayload(
     val regionId: Int,
     val state: OfflineRegionState
 )
+
+@Serializable
+data class RegionProgressPayload(
+    val regionId: Int,
+    val progress: Float
+)

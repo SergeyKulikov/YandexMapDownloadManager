@@ -48,6 +48,7 @@ fun RegionDownloadButton(
                 text = "Скачать",
                 icon = Res.drawable.cloud_download,
                 color = normalColor,
+                enabled = true,
                 onClick = onClick
             )
         }
@@ -55,9 +56,10 @@ fun RegionDownloadButton(
         OfflineRegionState.DOWNLOADING -> {
 
             RegionActionButton(
-                text = "Пауза",
+                text = "Остановить",
                 icon = Res.drawable.pause,
                 color = normalColor,
+                enabled = true,
                 onClick = onClick
             )
         }
@@ -68,6 +70,7 @@ fun RegionDownloadButton(
                 text = "Продолжить",
                 icon = Res.drawable.cloud_download,
                 color = normalColor,
+                enabled = true,
                 onClick = onClick
             )
         }
@@ -75,20 +78,32 @@ fun RegionDownloadButton(
         OfflineRegionState.COMPLETED -> {
 
             RegionActionButton(
-                text = "Удалить",
-                icon = Res.drawable.delete,
-                color = MaterialTheme.colorScheme.error,
+                text = "Скачано",
+                icon = Res.drawable.cloud_download,
+                color = MaterialTheme.colorScheme.outline,
+                enabled = false,
+                onClick = {}
+            )
+        }
+
+        OfflineRegionState.OUTDATED -> {
+
+            RegionActionButton(
+                text = "Обновить",
+                icon = Res.drawable.cloud_download,
+                color = MaterialTheme.colorScheme.primary,
+                enabled = true,
                 onClick = onClick
             )
         }
 
-        OfflineRegionState.OUTDATED,
         OfflineRegionState.NEED_UPDATE -> {
 
             RegionActionButton(
                 text = "Обновить",
                 icon = Res.drawable.cloud_download,
-                color = normalColor,
+                color = MaterialTheme.colorScheme.primary,
+                enabled = true,
                 onClick = onClick
             )
         }
@@ -96,9 +111,10 @@ fun RegionDownloadButton(
         OfflineRegionState.UNSUPPORTED -> {
 
             RegionActionButton(
-                text = "Недоступно",
-                icon = Res.drawable.delete,
+                text = "Не поддерживается",
+                icon = Res.drawable.cloud_download,
                 color = MaterialTheme.colorScheme.outline,
+                enabled = false,
                 onClick = {}
             )
         }
@@ -110,11 +126,17 @@ private fun RegionActionButton(
     text: String,
     icon: DrawableResource,
     color: Color,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
 
+    val contentColor =
+        if (enabled) color
+        else MaterialTheme.colorScheme.outline
+
     Surface(
         onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(
             width = 1.dp,
@@ -138,7 +160,7 @@ private fun RegionActionButton(
                 painter = painterResource(icon),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                colorFilter = ColorFilter.tint(color)
+                colorFilter = ColorFilter.tint(contentColor)
             )
 
             Spacer(

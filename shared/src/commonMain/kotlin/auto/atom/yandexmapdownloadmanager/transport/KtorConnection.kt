@@ -5,12 +5,11 @@ import io.ktor.network.sockets.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * Реализация [Connection] поверх TCP-соединения Ktor.
@@ -21,42 +20,62 @@ import kotlinx.coroutines.sync.withLock
  * - отслеживание состояния соединения;
  * - освобождение сетевых ресурсов.
  *
- * Класс не содержит логики протокола и не анализирует содержимое
- * передаваемых сообщений.
+ * Для асинхронной отправки используется очередь исходящих
+ * сообщений и единственная корутина-писатель. Такой подход
+ * исключает одновременную запись в сокет, уменьшает количество
+ * создаваемых корутин при частой отправке сообщений (например,
+ * прогресса загрузки) и обеспечивает последовательную передачу
+ * всех пакетов.
+ *
+ * Класс не содержит логики протокола и не анализирует
+ * содержимое передаваемых сообщений.
  */
 internal class KtorConnection(
     private val socket: Socket,
     private val frameIO: FrameIO
 ) : Connection {
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val sendMutex = Mutex()
-
-    override fun sendAsync(packet: Packet) {
-        scope.launch {
-            send(packet)
-        }
-    }
-
-    private val _isConnected = MutableStateFlow(true)
+    /**
+     * Очередь исходящих сообщений.
+     */
+    private val sendChannel = Channel<Packet>(Channel.UNLIMITED)
 
     /**
      * Текущее состояние соединения.
      */
+    private val _isConnected = MutableStateFlow(true)
+
     override val isConnected: StateFlow<Boolean> = _isConnected
+
+    init {
+        scope.launch {
+            for (packet in sendChannel) {
+                if (!send(packet)) break
+            }
+        }
+    }
+
+    /**
+     * Асинхронно помещает пакет в очередь на отправку.
+     */
+    override fun sendAsync(packet: Packet) {
+        sendChannel.trySend(packet)
+    }
 
     /**
      * Отправляет пакет удаленной стороне.
      *
-     * @param message пакет протокола для передачи.
-     * @return true, если пакет успешно отправлен.
+     * Метод вызывается только одной корутиной,
+     * поэтому запись в сокет всегда последовательная.
      */
-    override suspend fun send(message: Packet): Boolean = sendMutex.withLock {
-        if (!_isConnected.value) {
-            return false
-        }
+    override suspend fun send(message: Packet): Boolean {
+
+        if (!_isConnected.value) return false
 
         return try {
+
             val json = ProtocolJson.encodeToString(
                 Packet.serializer(),
                 message
@@ -67,8 +86,6 @@ internal class KtorConnection(
 
             frameIO.writeFrame(json.encodeToByteArray())
 
-            println(">>> SEND OK")
-
             true
 
         } catch (e: Exception) {
@@ -77,6 +94,7 @@ internal class KtorConnection(
             e.printStackTrace()
 
             _isConnected.value = false
+            sendChannel.close()
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }
@@ -89,13 +107,11 @@ internal class KtorConnection(
      * Ожидает получение следующего пакета.
      *
      * @return полученный пакет или null,
-     * если соединение было закрыто.
+     * если соединение закрыто.
      */
     override suspend fun receive(): Packet? {
 
-        if (!_isConnected.value) {
-            return null
-        }
+        if (!_isConnected.value) return null
 
         return try {
 
@@ -115,6 +131,7 @@ internal class KtorConnection(
             e.printStackTrace()
 
             _isConnected.value = false
+            sendChannel.close()
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }
@@ -131,6 +148,8 @@ internal class KtorConnection(
         withContext(Dispatchers.IO) {
 
             _isConnected.value = false
+
+            sendChannel.close()
 
             runCatching { frameIO.close() }
             runCatching { socket.close() }

@@ -51,9 +51,17 @@ internal class KtorConnection(
 
     init {
         scope.launch {
+
+            println(">>> Writer started")
+
             for (packet in sendChannel) {
+
+                println(">>> Writer got ${packet.message::class.simpleName}")
+
                 if (!send(packet)) break
             }
+
+            println(">>> Writer stopped")
         }
     }
 
@@ -61,7 +69,14 @@ internal class KtorConnection(
      * Асинхронно помещает пакет в очередь на отправку.
      */
     override fun sendAsync(packet: Packet) {
-        sendChannel.trySend(packet)
+
+        println(">>> QUEUE ${packet.message::class.simpleName}")
+
+        val result = sendChannel.trySend(packet)
+
+        if (result.isFailure) {
+            println(">>> QUEUE FAILED ${result.exceptionOrNull()}")
+        }
     }
 
     /**
@@ -85,6 +100,8 @@ internal class KtorConnection(
             println(json)
 
             frameIO.writeFrame(json.encodeToByteArray())
+
+            println(">>> WRITE OK")
 
             true
 
@@ -120,10 +137,14 @@ internal class KtorConnection(
             println("<<< RECV")
             println(payload.decodeToString())
 
-            ProtocolJson.decodeFromString(
+            val packet = ProtocolJson.decodeFromString(
                 Packet.serializer(),
                 payload.decodeToString()
             )
+
+            println("<<< RECEIVE ${packet.message::class.simpleName}")
+
+            return packet
 
         } catch (e: Exception) {
 

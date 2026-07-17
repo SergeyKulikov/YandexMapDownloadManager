@@ -29,6 +29,7 @@ import atomyandexmapmanager.shared.generated.resources.map
 import atomyandexmapmanager.shared.generated.resources.storage
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import org.jetbrains.compose.resources.painterResource
+import kotlin.math.roundToInt
 
 @Composable
 fun OfflineRegionItem(
@@ -172,6 +173,7 @@ fun OfflineRegionItem(
                         )
                     }
                     region.downloadProgress?.let { progress ->
+                        val percent = (progress * 10000).roundToInt() / 100f
 
                         Column(
                             modifier = Modifier.padding(
@@ -189,14 +191,14 @@ fun OfflineRegionItem(
                             Spacer(Modifier.height(6.dp))
 
                             LinearProgressIndicator(
-                                progress = { progress / 100f },
+                                progress = { progress },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(Modifier.height(4.dp))
 
                             Text(
-                                text = "$progress%",
+                                text = "$percent%",
                                 modifier = Modifier.align(Alignment.End),
                                 style = MaterialTheme.typography.bodySmall
                             )

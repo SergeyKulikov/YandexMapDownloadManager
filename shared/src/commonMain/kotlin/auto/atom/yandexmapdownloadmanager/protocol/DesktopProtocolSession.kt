@@ -124,7 +124,7 @@ class DesktopProtocolSession(
                 }
 
                 is Progress -> {
-
+                    println("<<< PROGRESS ${message.progress}")
                     handleProgress(message)
                 }
 

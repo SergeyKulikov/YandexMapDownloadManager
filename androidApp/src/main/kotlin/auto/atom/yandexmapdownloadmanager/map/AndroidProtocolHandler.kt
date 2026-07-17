@@ -1,8 +1,12 @@
 package auto.atom.yandexmapdownloadmanager.map
 
 import auto.atom.yandexmapdownloadmanager.command.CommandDispatcher
+import auto.atom.yandexmapdownloadmanager.commands.CancelRegionHandler
+import auto.atom.yandexmapdownloadmanager.commands.DeleteRegionHandler
 import auto.atom.yandexmapdownloadmanager.commands.DownloadRegionHandler
 import auto.atom.yandexmapdownloadmanager.commands.GetRegionsHandler
+import auto.atom.yandexmapdownloadmanager.commands.PauseRegionHandler
+import auto.atom.yandexmapdownloadmanager.commands.ResumeRegionHandler
 import auto.atom.yandexmapdownloadmanager.protocol.Command
 import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
@@ -43,10 +47,10 @@ class AndroidProtocolHandler(
         mapOf(
             Command.GET_REGIONS to GetRegionsHandler(offlineYandexMapsManager),
             Command.DOWNLOAD_REGION to DownloadRegionHandler(offlineYandexMapsManager),
-//            Command.PAUSE_REGION_DOWNLOAD to PauseRegionDownloadHandler(offlineYandexMapsManager),
-//            Command.RESUME_REGION_DOWNLOAD to ResumeRegionDownloadHandler(offlineYandexMapsManager),
-//            Command.CANCEL_REGION_DOWNLOAD to CancelRegionDownloadHandler(offlineYandexMapsManager),
-//            Command.DELETE_REGION to DeleteRegionHandler(offlineYandexMapsManager)
+            Command.PAUSE_REGION_DOWNLOAD to PauseRegionHandler(offlineYandexMapsManager),
+            Command.RESUME_REGION_DOWNLOAD to ResumeRegionHandler(offlineYandexMapsManager),
+            Command.CANCEL_REGION_DOWNLOAD to CancelRegionHandler(offlineYandexMapsManager),
+            Command.DELETE_REGION to DeleteRegionHandler(offlineYandexMapsManager)
         )
     )
 

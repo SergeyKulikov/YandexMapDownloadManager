@@ -60,7 +60,6 @@ class DesktopProtocolApiImpl(
                 )
             )
         ) { progress ->
-
             onProgress(progress.progress)
         }
 
@@ -69,19 +68,83 @@ class DesktopProtocolApiImpl(
         }
     }
 
+    /**
+     * Приостанавливает загрузку региона.
+     */
     override suspend fun pauseRegion(regionId: Int) {
-        TODO("Not yet implemented")
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.PAUSE_REGION_DOWNLOAD,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "PAUSE_REGION_DOWNLOAD failed."
+        }
     }
 
+    /**
+     * Продолжает загрузку региона.
+     */
     override suspend fun resumeRegion(regionId: Int) {
-        TODO("Not yet implemented")
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.RESUME_REGION_DOWNLOAD,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "RESUME_REGION_DOWNLOAD failed."
+        }
     }
 
+    /**
+     * Отменяет загрузку региона.
+     */
     override suspend fun cancelRegion(regionId: Int) {
-        TODO("Not yet implemented")
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.CANCEL_REGION_DOWNLOAD,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "CANCEL_REGION_DOWNLOAD failed."
+        }
     }
 
+    /**
+     * Удаляет загруженный регион.
+     */
     override suspend fun deleteRegion(regionId: Int) {
-        TODO("Not yet implemented")
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.DELETE_REGION,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "DELETE_REGION failed."
+        }
     }
 }

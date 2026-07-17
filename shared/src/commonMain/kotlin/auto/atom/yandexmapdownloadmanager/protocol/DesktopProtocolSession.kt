@@ -188,5 +188,7 @@ class DesktopProtocolSession(
 
         pendingRequests.clear()
         progressCallbacks.clear()
+
+        onRegionStateChanged = null
     }
 }

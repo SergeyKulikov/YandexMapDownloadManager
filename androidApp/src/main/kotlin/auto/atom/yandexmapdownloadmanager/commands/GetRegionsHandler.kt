@@ -26,6 +26,11 @@ class GetRegionsHandler(
     ) {
         try {
             offlineYandexMapsManager.loadRegions { regions ->
+
+                val states = regions.associate { region ->
+                    region.id to offlineYandexMapsManager.getState(region.id)
+                }
+
                 connection.sendAsync(
                     Packet(
                         message = Response(
@@ -34,16 +39,15 @@ class GetRegionsHandler(
                             status = Status.OK,
                             payload = ProtocolJson.encodeToJsonElement(
                                 RegionsPayload(
-                                    regions.toOfflineRegionTree().filterRussiaRegions()
+                                    regions.toOfflineRegionTree(states).filterRussiaRegions()
                                 )
                             )
                         )
                     )
                 )
-
             }
         } catch (ex: Exception) {
-            println(ex.stackTrace)
+            ex.printStackTrace()
         }
     }
 }

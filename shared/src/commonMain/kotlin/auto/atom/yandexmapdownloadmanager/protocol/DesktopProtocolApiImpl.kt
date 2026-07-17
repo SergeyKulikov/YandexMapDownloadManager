@@ -69,19 +69,19 @@ class DesktopProtocolApiImpl(
         }
     }
 
-    override suspend fun pauseRegion(regionId: String) {
+    override suspend fun pauseRegion(regionId: Int) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun resumeRegion(regionId: String) {
+    override suspend fun resumeRegion(regionId: Int) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun cancelRegion(regionId: String) {
+    override suspend fun cancelRegion(regionId: Int) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun deleteRegion(regionId: String) {
+    override suspend fun deleteRegion(regionId: Int) {
         TODO("Not yet implemented")
     }
 }

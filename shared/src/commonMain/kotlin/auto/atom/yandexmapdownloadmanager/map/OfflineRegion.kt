@@ -1,6 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.map
 
-import auto.atom.yandexmapdownloadmanager.RegionState
+import auto.atom.yandexmapdownloadmanager.OfflineRegionState
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,6 +12,6 @@ data class OfflineRegion(
     val releaseTime: Long,
     val size: Long,
     val children: MutableList<OfflineRegion> = mutableListOf(),
-    val state: RegionState = RegionState.NOT_DOWNLOADED,
+    val state: OfflineRegionState = OfflineRegionState.AVAILABLE,
     val downloadProgress: Float? = null,
 )

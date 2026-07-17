@@ -86,7 +86,7 @@ fun MapsScreen(
             OfflineRegionTree(
                 regions = countryRegions,
                 onDownloadClick = { region ->
-                    viewModel.downloadRegionById(region.id)
+                    viewModel.regionAction(region)
                 },
                 formatSize = ::formatSize,
                 formatDate = ::formatDate

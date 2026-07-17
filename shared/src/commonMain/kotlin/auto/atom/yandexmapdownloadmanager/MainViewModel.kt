@@ -5,6 +5,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.Protocol
+import auto.atom.yandexmapdownloadmanager.protocol.map.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +82,10 @@ class MainViewModel {
 
                 protocolSession = DesktopProtocolSession(connection!!)
                 protocolSession!!.start()
+
+                protocolSession!!.setOnRegionStateChangedListener { payload ->
+                    updateRegionState(payload)
+                }
 
                 protocolApi = DesktopProtocolApiImpl(protocolSession!!)
 
@@ -239,6 +244,7 @@ class MainViewModel {
     }
 
 
+    /*
     fun downloadRegionById(regionId: Int) {
         scope.launch {
 
@@ -265,6 +271,61 @@ class MainViewModel {
                 _uiState.value = _uiState.value.copy(
                     status = e.message ?: "Ошибка загрузки региона"
                 )
+            }
+        }
+    }
+    */
+
+
+    fun regionAction(region: OfflineRegion) {
+        scope.launch {
+            try {
+                when (region.state) {
+
+                    OfflineRegionState.AVAILABLE -> {
+                        requireNotNull(protocolApi)
+                            .downloadRegion(region.id)
+                    }
+
+                    OfflineRegionState.DOWNLOADING -> {
+                        requireNotNull(protocolApi)
+                            .pauseRegion(region.id)
+                    }
+
+                    OfflineRegionState.PAUSED -> {
+                        requireNotNull(protocolApi)
+                            .resumeRegion(region.id)
+                    }
+
+                    OfflineRegionState.COMPLETED -> {
+                        requireNotNull(protocolApi)
+                            .deleteRegion(region.id)
+                    }
+
+                    OfflineRegionState.OUTDATED,
+                    OfflineRegionState.NEED_UPDATE -> {
+                        requireNotNull(protocolApi)
+                            .downloadRegion(region.id)
+                    }
+
+                    OfflineRegionState.UNSUPPORTED -> {
+                        // Ничего не делаем.
+                    }
+                }
+
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun updateRegionState(
+        payload: RegionStatePayload
+    ) {
+        _regions.value = _regions.value.map { region ->
+            if (region.id == payload.regionId) {
+                region.copy(state = payload.state)
+            } else {
+                region
             }
         }
     }

@@ -3,13 +3,6 @@ package auto.atom.yandexmapdownloadmanager.protocol.map
 import auto.atom.yandexmapdownloadmanager.map.OfflineRegion
 import kotlinx.serialization.Serializable
 
-/**
- * Запрос списка доступных регионов.
- *
- * Payload отсутствует.
- */
-@Serializable
-data object GetRegionsPayload
 
 /**
  * Ответ со списком регионов.

@@ -42,7 +42,7 @@ fun RegionDownloadButton(
 
     when (region.state) {
 
-        RegionState.NOT_DOWNLOADED -> {
+        OfflineRegionState.AVAILABLE -> {
 
             RegionActionButton(
                 text = "Скачать",
@@ -52,27 +52,17 @@ fun RegionDownloadButton(
             )
         }
 
-        RegionState.DOWNLOADING -> {
+        OfflineRegionState.DOWNLOADING -> {
 
             RegionActionButton(
-                text = "Отмена",
+                text = "Пауза",
                 icon = Res.drawable.pause,
                 color = normalColor,
                 onClick = onClick
             )
         }
 
-        RegionState.DOWNLOADED -> {
-
-            RegionActionButton(
-                text = "Удалить",
-                icon = Res.drawable.delete,
-                color = MaterialTheme.colorScheme.error,
-                onClick = onClick
-            )
-        }
-
-        RegionState.PAUSED -> {
+        OfflineRegionState.PAUSED -> {
 
             RegionActionButton(
                 text = "Продолжить",
@@ -82,13 +72,34 @@ fun RegionDownloadButton(
             )
         }
 
-        RegionState.ERROR -> {
+        OfflineRegionState.COMPLETED -> {
 
             RegionActionButton(
-                text = "Повторить",
-                icon = Res.drawable.cloud_download,
+                text = "Удалить",
+                icon = Res.drawable.delete,
                 color = MaterialTheme.colorScheme.error,
                 onClick = onClick
+            )
+        }
+
+        OfflineRegionState.OUTDATED,
+        OfflineRegionState.NEED_UPDATE -> {
+
+            RegionActionButton(
+                text = "Обновить",
+                icon = Res.drawable.cloud_download,
+                color = normalColor,
+                onClick = onClick
+            )
+        }
+
+        OfflineRegionState.UNSUPPORTED -> {
+
+            RegionActionButton(
+                text = "Недоступно",
+                icon = Res.drawable.delete,
+                color = MaterialTheme.colorScheme.outline,
+                onClick = {}
             )
         }
     }

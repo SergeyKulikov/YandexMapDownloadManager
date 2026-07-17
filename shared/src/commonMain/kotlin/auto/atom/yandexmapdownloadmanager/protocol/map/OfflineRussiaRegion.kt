@@ -1,4 +1,4 @@
-package auto.atom.yandexmapdownloadmanager.protocol
+package auto.atom.yandexmapdownloadmanager.protocol.map
 
 /**
  * Автоматически сформировано по getRegions.json (Offline MapKit).

@@ -8,11 +8,12 @@ import auto.atom.yandexmapdownloadmanager.protocol.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.Progress
-import auto.atom.yandexmapdownloadmanager.protocol.Protocol
+import auto.atom.yandexmapdownloadmanager.protocol.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.Request
 import auto.atom.yandexmapdownloadmanager.protocol.Response
-import auto.atom.yandexmapdownloadmanager.protocol.Status
+import auto.atom.yandexmapdownloadmanager.protocol.map.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import java.util.UUID
 
 /**
  * Обрабатывает входящие команды Desktop.
@@ -20,9 +21,24 @@ import auto.atom.yandexmapdownloadmanager.transport.Connection
 
 class AndroidProtocolHandler(
     private val connection: Connection,
-    offlineYandexMapsManager: OfflineYandexMapsManager
+    private val offlineYandexMapsManager: OfflineYandexMapsManager
 ) {
 
+    init {
+        offlineYandexMapsManager.setOnRegionStateChangedListener { regionId, state ->
+            connection.sendAsync(
+                Packet(
+                    message = RegionStateNotification(
+                        id = UUID.randomUUID().toString(),
+                        payload = RegionStatePayload(
+                            regionId = regionId,
+                            state = state.toOfflineRegionState()
+                        )
+                    )
+                )
+            )
+        }
+    }
     private val dispatcher = CommandDispatcher(
         mapOf(
             Command.GET_REGIONS to GetRegionsHandler(offlineYandexMapsManager),
@@ -44,7 +60,7 @@ class AndroidProtocolHandler(
                 is Request ->
                     dispatcher.dispatch(message, connection)
 
-                is Response, is Progress  -> {
+                is Response, is Progress, is RegionStateNotification  -> {
                     // Android не ожидает Response
                     // Android не ожидает Progress
                 }
@@ -52,6 +68,7 @@ class AndroidProtocolHandler(
                 is HelloRequest, is HelloResponse -> {
                     // HelloRequest/HelloResponse уже обработаны во время handshake()
                 }
+
             }
         }
     }

@@ -165,9 +165,7 @@ internal class KtorConnection(
      * Закрывает соединение и освобождает связанные ресурсы.
      */
     override suspend fun close() {
-
         withContext(Dispatchers.IO) {
-
             _isConnected.value = false
 
             sendChannel.close()

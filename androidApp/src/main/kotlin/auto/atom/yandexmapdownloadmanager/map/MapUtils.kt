@@ -1,8 +1,10 @@
 package auto.atom.yandexmapdownloadmanager.map
 
+import auto.atom.yandexmapdownloadmanager.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.protocol.CountryGeoID
-import auto.atom.yandexmapdownloadmanager.protocol.OfflineRussiaRegion
+import auto.atom.yandexmapdownloadmanager.protocol.map.OfflineRussiaRegion
 import com.yandex.mapkit.offline_cache.Region
+import com.yandex.mapkit.offline_cache.RegionState
 
 fun buildTree(
     regions: List<Region>
@@ -42,7 +44,7 @@ fun buildTree(
 /**
  * Строит дерево регионов из списка MapKit по всем странам.
  */
-fun List<Region>.toOfflineRegionTree(): List<OfflineRegion> {
+fun List<Region>.toOfflineRegionTree(status: Map<Int, RegionState>): List<OfflineRegion> {
 
     val nodes = this.associate { region ->
 
@@ -52,6 +54,7 @@ fun List<Region>.toOfflineRegionTree(): List<OfflineRegion> {
             name = region.name,
             country = region.country,
             releaseTime = region.releaseTime,
+            state = (status[region.id] ?: RegionState.UNSUPPORTED).toOfflineRegionState(),
             size = region.size.value.toLong()
         )
     }
@@ -91,3 +94,15 @@ fun List<OfflineRegion>.filterRussiaRegions(): List<OfflineRegion> {
         }
     }
 }
+
+
+fun RegionState.toOfflineRegionState() =
+    when (this) {
+        RegionState.AVAILABLE -> OfflineRegionState.AVAILABLE
+        RegionState.DOWNLOADING -> OfflineRegionState.DOWNLOADING
+        RegionState.PAUSED -> OfflineRegionState.PAUSED
+        RegionState.COMPLETED -> OfflineRegionState.COMPLETED
+        RegionState.OUTDATED -> OfflineRegionState.OUTDATED
+        RegionState.UNSUPPORTED -> OfflineRegionState.UNSUPPORTED
+        RegionState.NEED_UPDATE -> OfflineRegionState.NEED_UPDATE
+    }

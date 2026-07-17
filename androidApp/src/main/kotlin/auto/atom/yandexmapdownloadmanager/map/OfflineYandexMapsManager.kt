@@ -44,11 +44,18 @@ class OfflineYandexMapsManager {
         )
     }
 
+    private var onRegionStateChanged: ((Int, RegionState) -> Unit)? = null
+
+    fun setOnRegionStateChangedListener(
+        listener: (Int, RegionState) -> Unit
+    ) {
+        onRegionStateChanged = listener
+    }
+
     /**
      * Активные загрузки.
      */
-    private val downloads =
-        mutableMapOf<Int, CompletableDeferred<Unit>>()
+    private val downloads = mutableMapOf<Int, CompletableDeferred<Unit>>()
 
     /**
      * Колбэки прогресса.
@@ -66,6 +73,11 @@ class OfflineYandexMapsManager {
             Log.d(
                 "OfflineMaps",
                 "Region $regionId state = $state"
+            )
+
+            onRegionStateChanged?.invoke(
+                regionId,
+                state
             )
 
             when (state) {

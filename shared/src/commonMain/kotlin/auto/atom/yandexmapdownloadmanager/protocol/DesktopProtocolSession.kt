@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
+import auto.atom.yandexmapdownloadmanager.protocol.map.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,8 @@ class DesktopProtocolSession(
     private val progressCallbacks =
         ConcurrentHashMap<String, (Progress) -> Unit>()
 
+    private var onRegionStateChanged: ((RegionStatePayload) -> Unit)? = null
+
     private var receiveJob: Job? = null
 
     /**
@@ -71,6 +74,13 @@ class DesktopProtocolSession(
         progressCallbacks.clear()
 
         scope.cancel()
+    }
+
+
+    fun setOnRegionStateChangedListener(
+        listener: (RegionStatePayload) -> Unit
+    ) {
+        onRegionStateChanged = listener
     }
 
     /**
@@ -128,6 +138,10 @@ class DesktopProtocolSession(
                     handleProgress(message)
                 }
 
+                is RegionStateNotification -> {
+                    handleRegionState(message.payload)
+                }
+
                 is Request -> {
                     // Desktop не принимает Request
                 }
@@ -150,6 +164,12 @@ class DesktopProtocolSession(
     ) {
 
         progressCallbacks[progress.id]?.invoke(progress)
+    }
+
+    private fun handleRegionState(
+        payload: RegionStatePayload
+    ) {
+        onRegionStateChanged?.invoke(payload)
     }
 
     /**

@@ -34,7 +34,13 @@ class MainViewModel {
 
     private var protocolApi: DesktopProtocolApi? = null
 
+    /**
+     * Подписка на состояние соединения.
+     */
     private var serverJob: Job? = null
+
+    private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
+    val regions: StateFlow<List<OfflineRegion>> = _regions.asStateFlow()
 
     @Volatile
     private var serverRunning = false
@@ -45,16 +51,7 @@ class MainViewModel {
 
     private var connection: Connection? = null
 
-    /**
-     * Подписка на состояние соединения.
-     */
-    private var connectionJob: Job? = null
-
-    private val _uiState = MutableStateFlow(
-        MainUiState(
-            serverPort = Protocol.PORT
-        )
-    )
+    private val _uiState = MutableStateFlow(MainUiState(serverPort = Protocol.PORT))
 
     /**
      * Текущее состояние пользовательского интерфейса.
@@ -64,9 +61,7 @@ class MainViewModel {
     /**
      * Запускает сервер.
      */
-
     fun startServer() {
-
         if (serverRunning) {
             return
         }
@@ -74,9 +69,7 @@ class MainViewModel {
         serverRunning = true
 
         serverJob = scope.launch {
-
             try {
-
                 _uiState.value = _uiState.value.copy(
                     isBusy = true,
                     isServerRunning = false,
@@ -135,11 +128,8 @@ class MainViewModel {
                         )
                     }
                 }
-
             } catch (e: Exception) {
-
                 if (serverRunning) {
-
                     _uiState.value = _uiState.value.copy(
                         isBusy = false,
                         isServerRunning = false,
@@ -147,22 +137,18 @@ class MainViewModel {
                         status = e.message ?: "Ошибка"
                     )
                 }
-
             } finally {
-
                 serverRunning = false
 
                 runCatching {
                     protocolSession?.stop()
                 }
-
                 protocolSession = null
                 protocolApi = null
 
                 runCatching {
                     connection?.close()
                 }
-
                 connection = null
 
                 runCatching {
@@ -171,90 +157,6 @@ class MainViewModel {
 
                 _uiState.value = MainUiState(
                     serverPort = Protocol.PORT
-                )
-            }
-        }
-    }
-
-    fun startServerOld() {
-
-        scope.launch {
-
-            try {
-
-                _uiState.value = _uiState.value.copy(
-                    isBusy = true,
-                    isServerRunning = false,
-                    isClientConnected = false,
-                    status = "Запуск сервера..."
-                )
-
-                server.start()
-
-                _uiState.value = _uiState.value.copy(
-                    isBusy = false,
-                    isServerRunning = true,
-                    status = "Ожидание подключения..."
-                )
-
-                connection = server.waitForConnection()
-
-                protocolSession = DesktopProtocolSession(connection!!)
-                protocolSession!!.start()
-
-                protocolSession!!.setOnRegionStateChangedListener { payload ->
-                    updateRegionState(payload)
-                }
-
-                protocolSession!!.setOnRegionProgressChangedListener {
-                    updateRegionProgress(it)
-                }
-
-                protocolApi = DesktopProtocolApiImpl(protocolSession!!)
-
-
-                getRegionsFromClient()
-
-                _uiState.value = _uiState.value.copy(
-                    isClientConnected = true,
-                    status = "Клиент подключен"
-                )
-
-
-                connectionJob?.cancel()
-
-                connectionJob = launch {
-
-                    connection!!
-                        .isConnected
-                        .collect { connected ->
-
-                            _uiState.value = _uiState.value.copy(
-                                isClientConnected = connected,
-                                status = if (connected)
-                                    "Клиент подключен"
-                                else
-                                    "Соединение потеряно"
-                            )
-                        }
-                }
-
-            } catch (e: Exception) {
-
-                connectionJob?.cancel()
-                connectionJob = null
-
-                runCatching {
-                    connection?.close()
-                }
-
-                connection = null
-
-                _uiState.value = _uiState.value.copy(
-                    isBusy = false,
-                    isServerRunning = false,
-                    isClientConnected = false,
-                    status = e.message ?: "Ошибка"
                 )
             }
         }
@@ -274,11 +176,9 @@ class MainViewModel {
      * Останавливает сервер.
      */
     fun stopServer() {
-
         serverRunning = false
 
         scope.launch {
-
             _uiState.value = _uiState.value.copy(
                 isBusy = true,
                 status = "Остановка сервера..."
@@ -292,13 +192,11 @@ class MainViewModel {
             runCatching {
                 protocolSession?.stop()
             }
-
             protocolSession = null
 
             runCatching {
                 connection?.close()
             }
-
             connection = null
 
             runCatching {
@@ -311,59 +209,23 @@ class MainViewModel {
         }
     }
 
-
-    fun stopServerOld() {
-
-        scope.launch {
-
-            _uiState.value = _uiState.value.copy(
-                isBusy = true,
-                status = "Остановка сервера..."
-            )
-
-            protocolApi = null
-
-            protocolSession?.stop()
-            protocolSession = null
-
-            connectionJob?.cancel()
-            connectionJob = null
-
-            runCatching {
-                connection?.close()
-            }
-
-            connection = null
-
-            server.stop()
-
-            _uiState.value = MainUiState()
-        }
-    }
-
     /**
      * Останавливает сервер при закрытии приложения.
      */
     fun shutdown() {
-
         serverRunning = false
-
         runBlocking {
-
             serverJob?.cancel()
-
             protocolApi = null
 
             runCatching {
                 protocolSession?.stop()
             }
-
             protocolSession = null
 
             runCatching {
                 connection?.close()
             }
-
             connection = null
 
             runCatching {
@@ -374,77 +236,9 @@ class MainViewModel {
         }
     }
 
-
-    fun shutdownOld() {
-        runBlocking {
-            protocolApi = null
-
-            runCatching {
-                protocolSession?.stop()
-            }
-
-            protocolSession = null
-
-            runCatching {
-                connection?.close()
-            }
-
-            runCatching {
-                server.stop()
-            }
-
-            connectionJob?.cancel()
-            scope.cancel()
-        }
-    }
-
-
-    private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
-    val regions: StateFlow<List<OfflineRegion>> = _regions.asStateFlow()
-
-    /**
-    fun loadRegions() {
-        scope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isBusy = true,
-                    status = "Получение списка регионов..."
-                )
-
-                _regions.value = requireNotNull(protocolApi).getRegions()
-
-                _uiState.value = _uiState.value.copy(
-                    isBusy = false,
-                    status = "Получено регионов: ${_regions.value.size}"
-                )
-
-            } catch (e: Exception) {
-
-                _uiState.value = _uiState.value.copy(
-                    isBusy = false,
-                    status = e.message ?: "Ошибка получения списка регионов"
-                )
-            }
-        }
-
-    }
-    */
-
     fun showServerScreen() {
         _uiState.value = _uiState.value.copy(
             screen = Screen.SERVER
-        )
-    }
-
-    fun showHandmadeMapsScreen() {
-        _uiState.value = _uiState.value.copy(
-            screen = Screen.MAPS_HANDMADE
-        )
-    }
-
-    fun showAutoMapsScreen() {
-        _uiState.value = _uiState.value.copy(
-            screen = Screen.MAPS_AUTO
         )
     }
 
@@ -508,21 +302,15 @@ class MainViewModel {
         }
     }
 
-
     private fun OfflineRegion.updateState(
         regionId: Int,
         state: OfflineRegionState
     ): OfflineRegion {
 
-        val newChildren = children.map {
-            it.updateState(regionId, state)
-        }.toMutableList()
+        val newChildren = children.map { it.updateState(regionId, state) }.toMutableList()
 
         return if (id == regionId) {
-            copy(
-                state = state,
-                children = newChildren
-            )
+            copy(state = state, children = newChildren)
         } else {
             copy(children = newChildren)
         }
@@ -533,15 +321,10 @@ class MainViewModel {
         progress: Float
     ): OfflineRegion {
 
-        val newChildren = children.map {
-            it.updateProgress(regionId, progress)
-        }.toMutableList()
+        val newChildren = children.map { it.updateProgress(regionId, progress) }.toMutableList()
 
         return if (id == regionId) {
-            copy(
-                downloadProgress = progress,
-                children = newChildren
-            )
+            copy(downloadProgress = progress, children = newChildren)
         } else {
             copy(children = newChildren)
         }
@@ -559,5 +342,3 @@ class MainViewModel {
         }
     }
 }
-
-

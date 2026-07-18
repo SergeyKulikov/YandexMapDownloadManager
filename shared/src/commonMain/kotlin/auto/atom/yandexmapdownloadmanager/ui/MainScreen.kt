@@ -40,9 +40,5 @@ fun MainScreen(
 
             Content(viewModel)
         }
-
-        HorizontalDivider()
-
-        StatusBar(viewModel)
     }
 }

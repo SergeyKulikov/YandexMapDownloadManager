@@ -5,7 +5,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -13,50 +17,59 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import atomyandexmapmanager.shared.generated.resources.Res
+import atomyandexmapmanager.shared.generated.resources.folder
+import atomyandexmapmanager.shared.generated.resources.system_update
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.buildUpdateQueue
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun StatusBar(
     viewModel: MainViewModel
 ) {
-
-    val uiState by viewModel.uiState.collectAsState()
     val regions by viewModel.regions.collectAsState()
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(30.dp)
+            .height(32.dp)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        Text(
-            if (uiState.isServerRunning)
-                "Сервер запущен"
-            else
-                "Сервер остановлен"
+        Icon(
+            painter = painterResource(Res.drawable.folder),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.primary
         )
 
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(6.dp))
 
         Text(
-            if (uiState.isClientConnected)
-                "Android подключен"
-            else
-                "Нет подключения"
+            text = "${regions.countRegions()} регионов"
         )
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.width(6.dp)) // Spacer(Modifier.weight(1f))
 
-        Text("Порт ${uiState.serverPort}")
+        Icon(
+            painter = painterResource(Res.drawable.system_update),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
 
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.width(6.dp))
 
-        Text("Регионов: ${regions.size}")
-
-        Spacer(Modifier.width(16.dp))
-
-        Text("К обновлению: ${regions.buildUpdateQueue().size}")
+        Text(
+            text = "${regions.buildUpdateQueue().size} требуют обновления"
+        )
     }
 }
+
+private fun List<OfflineRegion>.countRegions(): Int =
+    sumOf { it.countRegions() }
+
+private fun OfflineRegion.countRegions(): Int =
+    1 + children.sumOf { it.countRegions() }

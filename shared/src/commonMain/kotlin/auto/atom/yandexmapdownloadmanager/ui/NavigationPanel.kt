@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,15 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.connected
 import atomyandexmapmanager.shared.generated.resources.disconnected
-import atomyandexmapmanager.shared.generated.resources.error
-import atomyandexmapmanager.shared.generated.resources.folder
 import atomyandexmapmanager.shared.generated.resources.handmade
 import atomyandexmapmanager.shared.generated.resources.server
+import atomyandexmapmanager.shared.generated.resources.splash_dark
+import atomyandexmapmanager.shared.generated.resources.splash_light
 import atomyandexmapmanager.shared.generated.resources.system_update
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -55,31 +57,26 @@ fun NavigationPanel(
             modifier = Modifier.padding(16.dp)
         ) {
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Image(
+                painter = painterResource(Res.drawable.splash_light),
+                contentDescription = "Yandex Map Download Manager",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(170.dp),
+                contentScale = ContentScale.Fit
+            )
 
-                Icon(
-                    painter = painterResource(Res.drawable.error),
-                    contentDescription = null,
-                    modifier = Modifier.size(42.dp)
-                )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
 
-                Spacer(Modifier.width(12.dp))
-
-                Text(
-                    text = "Yandex Map\nDownload Manager",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
 
             Text(
                 text = "РАЗДЕЛЫ",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold
             )
 
             Spacer(Modifier.height(8.dp))

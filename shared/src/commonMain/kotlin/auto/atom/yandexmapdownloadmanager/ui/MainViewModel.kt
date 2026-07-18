@@ -33,6 +33,11 @@ class MainViewModel {
     private var protocolSession: DesktopProtocolSession? = null
 
     private var protocolApi: DesktopProtocolApi? = null
+
+    private var serverJob: Job? = null
+
+    @Volatile
+    private var serverRunning = false
     private val server = KtorTcpServer(
         host = "0.0.0.0",
         port = Protocol.PORT
@@ -59,10 +64,119 @@ class MainViewModel {
     /**
      * Запускает сервер.
      */
-    /**
-     * Запускает сервер.
-     */
+
     fun startServer() {
+
+        if (serverRunning) {
+            return
+        }
+
+        serverRunning = true
+
+        serverJob = scope.launch {
+
+            try {
+
+                _uiState.value = _uiState.value.copy(
+                    isBusy = true,
+                    isServerRunning = false,
+                    isClientConnected = false,
+                    status = "Запуск сервера..."
+                )
+
+                server.start()
+
+                _uiState.value = _uiState.value.copy(
+                    isBusy = false,
+                    isServerRunning = true,
+                    status = "Ожидание подключения..."
+                )
+
+                while (serverRunning) {
+
+                    connection = server.waitForConnection()
+
+                    protocolSession = DesktopProtocolSession(connection!!)
+                    protocolSession!!.start()
+
+                    protocolSession!!.setOnRegionStateChangedListener(::updateRegionState)
+                    protocolSession!!.setOnRegionProgressChangedListener(::updateRegionProgress)
+
+                    protocolApi = DesktopProtocolApiImpl(protocolSession!!)
+
+                    getRegionsFromClient()
+
+                    _uiState.value = _uiState.value.copy(
+                        isClientConnected = true,
+                        status = "Клиент подключен"
+                    )
+
+                    while (serverRunning && connection!!.isConnected.value) {
+                        kotlinx.coroutines.delay(200)
+                    }
+
+                    runCatching {
+                        protocolSession?.stop()
+                    }
+
+                    protocolSession = null
+                    protocolApi = null
+
+                    runCatching {
+                        connection?.close()
+                    }
+
+                    connection = null
+
+                    if (serverRunning) {
+                        _uiState.value = _uiState.value.copy(
+                            isClientConnected = false,
+                            status = "Ожидание подключения..."
+                        )
+                    }
+                }
+
+            } catch (e: Exception) {
+
+                if (serverRunning) {
+
+                    _uiState.value = _uiState.value.copy(
+                        isBusy = false,
+                        isServerRunning = false,
+                        isClientConnected = false,
+                        status = e.message ?: "Ошибка"
+                    )
+                }
+
+            } finally {
+
+                serverRunning = false
+
+                runCatching {
+                    protocolSession?.stop()
+                }
+
+                protocolSession = null
+                protocolApi = null
+
+                runCatching {
+                    connection?.close()
+                }
+
+                connection = null
+
+                runCatching {
+                    server.stop()
+                }
+
+                _uiState.value = MainUiState(
+                    serverPort = Protocol.PORT
+                )
+            }
+        }
+    }
+
+    fun startServerOld() {
 
         scope.launch {
 
@@ -161,6 +275,45 @@ class MainViewModel {
      */
     fun stopServer() {
 
+        serverRunning = false
+
+        scope.launch {
+
+            _uiState.value = _uiState.value.copy(
+                isBusy = true,
+                status = "Остановка сервера..."
+            )
+
+            serverJob?.cancel()
+            serverJob = null
+
+            protocolApi = null
+
+            runCatching {
+                protocolSession?.stop()
+            }
+
+            protocolSession = null
+
+            runCatching {
+                connection?.close()
+            }
+
+            connection = null
+
+            runCatching {
+                server.stop()
+            }
+
+            _uiState.value = MainUiState(
+                serverPort = Protocol.PORT
+            )
+        }
+    }
+
+
+    fun stopServerOld() {
+
         scope.launch {
 
             _uiState.value = _uiState.value.copy(
@@ -192,6 +345,37 @@ class MainViewModel {
      * Останавливает сервер при закрытии приложения.
      */
     fun shutdown() {
+
+        serverRunning = false
+
+        runBlocking {
+
+            serverJob?.cancel()
+
+            protocolApi = null
+
+            runCatching {
+                protocolSession?.stop()
+            }
+
+            protocolSession = null
+
+            runCatching {
+                connection?.close()
+            }
+
+            connection = null
+
+            runCatching {
+                server.stop()
+            }
+
+            scope.cancel()
+        }
+    }
+
+
+    fun shutdownOld() {
         runBlocking {
             protocolApi = null
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,7 +46,7 @@ fun NavigationPanel(
 
     Surface(
         modifier = Modifier
-            .width(250.dp)
+            .width(350.dp)
             .fillMaxHeight(),
         tonalElevation = 3.dp
     ) {
@@ -67,7 +68,7 @@ fun NavigationPanel(
                 Spacer(Modifier.width(12.dp))
 
                 Text(
-                    "Yandex Map\nDownload Manager",
+                    text = "Yandex Map\nDownload Manager",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -76,7 +77,7 @@ fun NavigationPanel(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                "РАЗДЕЛЫ",
+                text = "РАЗДЕЛЫ",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -109,12 +110,15 @@ fun NavigationPanel(
 
             Spacer(Modifier.weight(1f))
 
-            HorizontalDivider()
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
                 Icon(
@@ -126,25 +130,53 @@ fun NavigationPanel(
                     ),
                     contentDescription = null,
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(48.dp)
                 )
 
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.height(12.dp))
 
-                Column {
+                Text(
+                    text = "Android",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
-                    Text(
-                        if (uiState.isClientConnected)
-                            "Android подключен"
-                        else
-                            "Нет подключения"
-                    )
+                Text(
+                    text = if (uiState.isClientConnected)
+                        "Клиент подключен"
+                    else
+                        "Ожидание подключения",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (uiState.isClientConnected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.error
+                )
 
-                    Text(
-                        "Порт ${uiState.serverPort}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                Spacer(Modifier.height(18.dp))
+
+                HorizontalDivider()
+
+                Spacer(Modifier.height(18.dp))
+
+                ConnectionRow(
+                    title = "Статус",
+                    value = if (uiState.isClientConnected)
+                        "Online"
+                    else
+                        "Offline",
+                    color = if (uiState.isClientConnected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.error
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                ConnectionRow(
+                    title = "Порт",
+                    value = uiState.serverPort.toString()
+                )
             }
         }
     }
@@ -217,5 +249,44 @@ private fun NavigationItem(
                         FontWeight.Normal
             )
         }
+    }
+}
+
+
+@Composable
+private fun ConnectionRow(
+    title: String,
+    value: String,
+    color: Color = MaterialTheme.colorScheme.onSurface
+) {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(
+                    color = color,
+                    shape = CircleShape
+                )
+        )
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = title,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Text(
+            text = value,
+            color = color,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

@@ -34,6 +34,8 @@ fun RegionDownloadButton(
     onClick: () -> Unit
 ) {
 
+    val updateColor = Color(0xFF7C3AED)
+
     val normalColor =
         if (level == 0)
             MaterialTheme.colorScheme.primary
@@ -91,8 +93,9 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Обновить",
                 icon = Res.drawable.cloud_download,
-                color = MaterialTheme.colorScheme.primary,
+                color = updateColor,
                 enabled = true,
+                isUpdateButton = true,
                 onClick = onClick
             )
         }
@@ -102,8 +105,9 @@ fun RegionDownloadButton(
             RegionActionButton(
                 text = "Обновить",
                 icon = Res.drawable.cloud_download,
-                color = MaterialTheme.colorScheme.primary,
+                color = updateColor,
                 enabled = true,
+                isUpdateButton = true,
                 onClick = onClick
             )
         }
@@ -127,12 +131,27 @@ private fun RegionActionButton(
     icon: DrawableResource,
     color: Color,
     enabled: Boolean,
+    isUpdateButton: Boolean = false,
     onClick: () -> Unit
 ) {
 
+    val backgroundColor =
+        if (enabled && isUpdateButton)
+            color
+        else
+            MaterialTheme.colorScheme.surface
+
     val contentColor =
-        if (enabled) color
-        else MaterialTheme.colorScheme.outline
+        when {
+            !enabled ->
+                MaterialTheme.colorScheme.outline
+
+            isUpdateButton ->
+                Color.White
+
+            else ->
+                color
+        }
 
     Surface(
         onClick = onClick,
@@ -142,7 +161,7 @@ private fun RegionActionButton(
             width = 1.dp,
             color = color
         ),
-        color = MaterialTheme.colorScheme.surface,
+        color = backgroundColor,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         modifier = Modifier
@@ -169,7 +188,7 @@ private fun RegionActionButton(
 
             Text(
                 text = text,
-                color = color,
+                color = contentColor,
                 style = MaterialTheme.typography.titleSmall
             )
         }

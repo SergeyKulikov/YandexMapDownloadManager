@@ -1,23 +1,22 @@
 package auto.atom.yandexmapdownloadmanager.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import auto.atom.yandexmapdownloadmanager.model.UpdateListItem
 import auto.atom.yandexmapdownloadmanager.model.buildUpdateQueue
+import androidx.compose.foundation.layout.*
 
 @Composable
 fun AutoMapsScreen(
@@ -26,42 +25,74 @@ fun AutoMapsScreen(
 
     val regions by viewModel.regions.collectAsState()
 
-    val updateQueue = remember(regions) {
-        regions.buildUpdateQueue()
-    }
 
-    if (updateQueue.isEmpty()) {
+    println(regions.toString())
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Все регионы обновлены.")
+    val listItems = remember(regions) {
+        buildList {
+
+            regions
+                .buildUpdateQueue()
+                .sortedBy { it.region.name.lowercase() }
+                .groupBy { it.region.name.first().uppercaseChar() }
+                .toSortedMap()
+                .forEach { (letter, tasks) ->
+
+                    add(UpdateListItem.Header(letter))
+
+                    tasks.forEach {
+                        add(UpdateListItem.Region(it))
+                    }
+                }
         }
-
-        return
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier
+            .fillMaxWidth(),
+        contentPadding = PaddingValues(8.dp)
     ) {
 
-        StatusBar(viewModel)
+        items(
+            items = listItems,
+            key = {
+                when (it) {
+                    is UpdateListItem.Header -> "header_${it.letter}"
+                    is UpdateListItem.Region -> it.task.region.id
+                }
+            },
+            span = {
+                when (it) {
+                    is UpdateListItem.Header ->
+                        GridItemSpan(maxLineSpan)
 
-        HorizontalDivider()
+                    is UpdateListItem.Region ->
+                        GridItemSpan(1)
+                }
+            }
+        ) { item ->
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            items(
-                items = updateQueue,
-                key = { it.region.id }
-            ) { task ->
+            when (item) {
 
-                RegionUpdateItem(task)
+                is UpdateListItem.Header -> {
+
+                    Text(
+                        text = item.letter.toString(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(
+                            horizontal = 8.dp,
+                            vertical = 12.dp
+                        )
+                    )
+                }
+
+                is UpdateListItem.Region -> {
+
+                    RegionUpdateItem(item.task)
+                }
             }
         }
     }
 }
+

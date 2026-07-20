@@ -33,6 +33,7 @@ import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.connected
 import atomyandexmapmanager.shared.generated.resources.disconnected
 import atomyandexmapmanager.shared.generated.resources.handmade
+import atomyandexmapmanager.shared.generated.resources.schedule
 import atomyandexmapmanager.shared.generated.resources.server
 import atomyandexmapmanager.shared.generated.resources.splash_dark
 import atomyandexmapmanager.shared.generated.resources.splash_light
@@ -103,6 +104,14 @@ fun NavigationPanel(
                 selected = uiState.screen == Screen.MAPS_AUTO
             ) {
                 viewModel.showScreen(Screen.MAPS_AUTO)
+            }
+
+            NavigationItem(
+                icon = Res.drawable.schedule,
+                title = "Периоды обновления",
+                selected = uiState.screen == Screen.TIMERS
+            ) {
+                viewModel.showScreen(Screen.TIMERS)
             }
 
             Spacer(Modifier.weight(1f))

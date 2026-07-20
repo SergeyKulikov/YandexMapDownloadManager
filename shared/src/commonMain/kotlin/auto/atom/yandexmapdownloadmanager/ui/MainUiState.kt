@@ -22,7 +22,9 @@ enum class Screen {
     /**
      * Автоматическое обновление регионов.
      */
-    MAPS_AUTO
+    MAPS_AUTO,
+
+    TIMERS
 }
 
 data class MainUiState(

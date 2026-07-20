@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import auto.atom.yandexmapdownloadmanager.timer.ui.TimerScreen
 
 /**
  * Контейнер содержимого главного окна.
@@ -33,6 +34,10 @@ fun Content(
 
             Screen.MAPS_AUTO ->
                 AutoMapsScreen(viewModel)
+
+            Screen.TIMERS -> {
+                TimerScreen()
+            }
         }
     }
 }

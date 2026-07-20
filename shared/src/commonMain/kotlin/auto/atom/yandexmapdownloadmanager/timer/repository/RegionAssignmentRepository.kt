@@ -1,5 +1,7 @@
 package auto.atom.yandexmapdownloadmanager.timer.repository
 
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
+
 interface RegionAssignmentRepository {
 
     suspend fun getPolicy(
@@ -11,5 +13,9 @@ interface RegionAssignmentRepository {
         policyId: String?
     )
 
-    suspend fun getAssignments(): Map<Int, String?>
+    suspend fun getAssignments(): RegionAssignments
+
+    suspend fun getRegions(
+        policyId: String?
+    ): Set<Int>
 }

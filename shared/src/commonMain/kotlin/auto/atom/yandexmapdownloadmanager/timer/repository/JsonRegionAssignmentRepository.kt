@@ -1,6 +1,5 @@
 package auto.atom.yandexmapdownloadmanager.timer.repository
 
-
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
 import kotlinx.serialization.json.Json
 import okio.FileSystem
@@ -17,31 +16,22 @@ class JsonRegionAssignmentRepository(
 
     override suspend fun getPolicy(
         regionId: Int
-    ): String? {
-
-        return getAssignments()[regionId]
-    }
+    ): String? =
+        getAssignments().policyFor(regionId)
 
     override suspend fun assign(
         regionId: Int,
         policyId: String?
     ) {
-
-        val assignments = getAssignments().toMutableMap()
-
-        if (policyId == null) {
-            assignments.remove(regionId)
-        } else {
-            assignments[regionId] = policyId
-        }
-
-        save(assignments)
+        save(
+            getAssignments().withAssignment(regionId, policyId)
+        )
     }
 
-    override suspend fun getAssignments(): Map<Int, String?> {
+    override suspend fun getAssignments(): RegionAssignments {
 
         if (!fileSystem.exists(file)) {
-            return emptyMap()
+            return RegionAssignments()
         }
 
         val text = fileSystem.read(file) {
@@ -49,26 +39,26 @@ class JsonRegionAssignmentRepository(
         }
 
         if (text.isBlank()) {
-            return emptyMap()
+            return RegionAssignments()
         }
 
-        return json.decodeFromString<RegionAssignments>(text)
-            .assignments
+        return json.decodeFromString(text)
     }
 
-    private suspend fun save(
-        assignments: Map<Int, String?>
+    override suspend fun getRegions(
+        policyId: String?
+    ): Set<Int> =
+        getAssignments().regionsFor(policyId)
+
+    private fun save(
+        assignments: RegionAssignments
     ) {
 
-        file.parent?.let {
-            fileSystem.createDirectories(it)
-        }
+        file.parent?.let(fileSystem::createDirectories)
 
         fileSystem.write(file) {
             writeUtf8(
-                json.encodeToString(
-                    RegionAssignments(assignments)
-                )
+                json.encodeToString(assignments)
             )
         }
     }

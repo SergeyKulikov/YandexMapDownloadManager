@@ -7,6 +7,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import auto.atom.yandexmapdownloadmanager.timer.repository.JsonRegionAssignmentRepository
 import auto.atom.yandexmapdownloadmanager.timer.repository.JsonUpdatePolicyRepository
@@ -20,6 +21,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
@@ -58,6 +60,9 @@ class MainViewModel {
     private val _regions = MutableStateFlow<List<OfflineRegion>>(emptyList())
     val regions: StateFlow<List<OfflineRegion>> = _regions.asStateFlow()
 
+    private val _filteredRegions = MutableStateFlow<List<OfflineRegion>>(emptyList())
+    val filteredRegions: StateFlow<List<OfflineRegion>> = _filteredRegions.asStateFlow()
+
     @Volatile
     private var serverRunning = false
     private val server = KtorTcpServer(
@@ -85,9 +90,42 @@ class MainViewModel {
         file = "config/region_assignments.json".toPath()
     )
 
+    private val _regionAssignments = MutableStateFlow(RegionAssignments())
+    val regionAssignments = _regionAssignments.asStateFlow()
+
     init {
         scope.launch {
             loadPolicies()
+            loadRegionAssignments()
+        }
+
+        scope.launch {
+            combine(
+                _regions,
+                _selectedPolicyId,
+                _regionAssignments
+            ) { regions, selectedPolicyId, assignments ->
+
+                val map = assignments.assignments
+
+                val predicate: (OfflineRegion) -> Boolean =
+                    if (selectedPolicyId == null) {
+                        { region ->
+                            !map.containsKey(region.id)
+                        }
+                    } else {
+                        { region ->
+                            map[region.id] == selectedPolicyId
+                        }
+                    }
+
+                regions.mapNotNull {
+                    it.filterTree(predicate)
+                }
+
+            }.collect {
+                _filteredRegions.value = it
+            }
         }
     }
 
@@ -443,5 +481,39 @@ class MainViewModel {
 
         _selectedPolicyId.value =
             _policies.value.firstOrNull()?.id
+    }
+
+    private suspend fun loadRegionAssignments() {
+        _regionAssignments.value =
+            regionAssignmentRepository.getAssignments()
+    }
+
+    fun assignRegion(
+        regionId: Int,
+        policyId: String?
+    ) {
+        scope.launch {
+            regionAssignmentRepository.assign(regionId, policyId)
+
+            _regionAssignments.value =
+                regionAssignmentRepository.getAssignments()
+        }
+    }
+
+    private fun OfflineRegion.filterTree(
+        predicate: (OfflineRegion) -> Boolean
+    ): OfflineRegion? {
+
+        val filteredChildren = children
+            .mapNotNull {
+                it.filterTree(predicate)
+            }
+            .toMutableList()
+
+        return if (predicate(this) || filteredChildren.isNotEmpty()) {
+            copy(children = filteredChildren)
+        } else {
+            null
+        }
     }
 }

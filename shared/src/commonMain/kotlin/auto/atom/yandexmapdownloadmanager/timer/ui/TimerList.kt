@@ -16,13 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.add_box
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
+import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun TimerList(
+    viewModel: MainViewModel,
     policies: List<UpdatePolicy>,
     selectedPolicyId: String?,
     onSelect: (String?) -> Unit,
@@ -94,6 +97,12 @@ fun TimerList(
                 },
                 onDelete = {
                     onDelete(policy.id)
+                },
+                onRegionDropped = { regionId, _ ->
+                    viewModel.addRegionToPeriod(
+                        policy.id,
+                        regionId
+                    )
                 }
             )
         }
@@ -104,7 +113,13 @@ fun TimerList(
             onClick = {
                 onSelect(null)
             },
-            onDelete = null
+            onDelete = null,
+            onRegionDropped = { regionId, _ ->
+                viewModel.addRegionToPeriod(
+                    null,
+                    regionId
+                )
+            }
         )
     }
 }

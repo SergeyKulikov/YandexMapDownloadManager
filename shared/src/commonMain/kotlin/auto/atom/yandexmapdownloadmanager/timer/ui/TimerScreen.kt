@@ -8,6 +8,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import auto.atom.yandexmapdownloadmanager.formatDate
@@ -23,11 +24,14 @@ fun TimerScreen(
     val selectedPolicyId by viewModel.selectedPolicyId.collectAsState()
     val regions by viewModel.filteredRegions.collectAsState()
 
+    val dragState = remember { DragState() }
+
     Row(
         modifier = Modifier.fillMaxSize()
     ) {
 
         TimerList(
+            viewModel = viewModel,
             modifier = Modifier
                 .width(260.dp)
                 .fillMaxHeight(),

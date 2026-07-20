@@ -2,6 +2,7 @@ package auto.atom.yandexmapdownloadmanager.timer.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,24 +14,55 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.delete
 import org.jetbrains.compose.resources.painterResource
-
+import androidx.compose.ui.draganddrop.DragData
+import androidx.compose.ui.draganddrop.dragData
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TimerListItem(
     title: String,
     selected: Boolean,
     onClick: () -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    onRegionDropped: ((regionId: Int, regionName: String) -> Unit)? = null
 ) {
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .dragAndDropTarget(
+                shouldStartDragAndDrop = { true },
+                target = object : DragAndDropTarget {
+
+                    override fun onDrop(event: DragAndDropEvent): Boolean {
+                        val dragData = event.dragData()
+                        if (dragData !is DragData.Text) {
+                            return false
+                        }
+
+                        val text = dragData.readText()
+                        val parts = text.split('|', limit = 2)
+
+                        if (parts.size != 2) {
+                            return false
+                        }
+
+                        val regionId = parts[0].toIntOrNull() ?: return false
+                        onRegionDropped?.invoke(regionId, parts[1])
+
+                        return true
+                    }
+                }
+            )
             .background(
                 color =
                     if (selected)

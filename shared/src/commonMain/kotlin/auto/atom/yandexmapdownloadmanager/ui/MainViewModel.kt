@@ -518,4 +518,15 @@ class MainViewModel {
             null
         }
     }
+
+
+    fun addRegionToPeriod(
+        policyId: String?,
+        regionId: Int
+    ) {
+        assignRegion(
+            regionId = regionId,
+            policyId = policyId
+        )
+    }
 }

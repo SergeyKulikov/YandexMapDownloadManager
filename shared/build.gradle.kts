@@ -41,6 +41,7 @@ kotlin {
             implementation(libs.ktor.server.core)
             implementation(libs.ktor.server.websockets)
             implementation(libs.gson)
+            implementation(libs.okio)
 
             implementation(libs.ktor.serialization.kotlinx.json)
 

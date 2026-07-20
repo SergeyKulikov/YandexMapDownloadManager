@@ -36,7 +36,7 @@ fun Content(
                 AutoMapsScreen(viewModel)
 
             Screen.TIMERS -> {
-                TimerScreen()
+                TimerScreen(viewModel)
             }
         }
     }

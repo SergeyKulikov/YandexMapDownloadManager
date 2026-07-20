@@ -2,17 +2,25 @@ package auto.atom.yandexmapdownloadmanager.timer.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 
 @Composable
-fun TimerScreen() {
+fun TimerScreen(
+    viewModel: MainViewModel
+) {
+
+    val policies by viewModel.policies.collectAsState()
+    val selectedPolicyId by viewModel.selectedPolicyId.collectAsState()
+
     Row(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -20,16 +28,22 @@ fun TimerScreen() {
         TimerList(
             modifier = Modifier
                 .width(260.dp)
-                .fillMaxHeight()
+                .fillMaxHeight(),
+            policies = policies,
+            selectedPolicyId = selectedPolicyId,
+            onSelect = viewModel::selectPolicy,
+            onAdd = viewModel::addPolicy,
+            onDelete = viewModel::deletePolicy
         )
 
-        HorizontalDivider()
+        VerticalDivider()
 
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxSize()
         ) {
-            RegionAssignmentPanel()
+            RegionAssignmentPanel(
+                viewModel = viewModel
+            )
         }
     }
 }

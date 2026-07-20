@@ -7,6 +7,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.util.UUID
+import kotlin.time.Duration.Companion.days
 
 /**
  * ViewModel главного окна приложения.
@@ -33,6 +36,15 @@ class MainViewModel {
     private var protocolSession: DesktopProtocolSession? = null
 
     private var protocolApi: DesktopProtocolApi? = null
+
+
+
+
+    private val _policies = MutableStateFlow<List<UpdatePolicy>>(emptyList())
+    val policies: StateFlow<List<UpdatePolicy>> = _policies.asStateFlow()
+
+    private val _selectedPolicyId = MutableStateFlow<String?>(null)
+    val selectedPolicyId: StateFlow<String?> = _selectedPolicyId.asStateFlow()
 
     /**
      * Подписка на состояние соединения.
@@ -57,6 +69,9 @@ class MainViewModel {
      * Текущее состояние пользовательского интерфейса.
      */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+
+
+
 
     /**
      * Запускает сервер.
@@ -339,6 +354,35 @@ class MainViewModel {
                 payload.regionId,
                 payload.progress
             )
+        }
+    }
+
+    fun selectPolicy(id: String?) {
+        _selectedPolicyId.value = id
+    }
+
+    fun addPolicy(
+        name: String,
+        days: Int
+    ) {
+        val policy = UpdatePolicy(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            periodDays = days.days
+        )
+
+        _policies.value += policy
+        _selectedPolicyId.value = policy.id
+    }
+
+    fun deletePolicy(id: String) {
+
+        _policies.value = _policies.value.filterNot {
+            it.id == id
+        }
+
+        if (_selectedPolicyId.value == id) {
+            _selectedPolicyId.value = null
         }
     }
 }

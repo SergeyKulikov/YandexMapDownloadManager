@@ -8,6 +8,8 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
+import auto.atom.yandexmapdownloadmanager.timer.repository.JsonRegionAssignmentRepository
+import auto.atom.yandexmapdownloadmanager.timer.repository.JsonUpdatePolicyRepository
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import java.util.UUID
 import kotlin.time.Duration.Companion.days
 
@@ -71,7 +75,21 @@ class MainViewModel {
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
 
+    private val updatePolicyRepository = JsonUpdatePolicyRepository(
+        fileSystem = FileSystem.SYSTEM,
+        file = "config/update_policies.json".toPath()
+    )
 
+    private val regionAssignmentRepository = JsonRegionAssignmentRepository(
+        fileSystem = FileSystem.SYSTEM,
+        file = "config/region_assignments.json".toPath()
+    )
+
+    init {
+        scope.launch {
+            loadPolicies()
+        }
+    }
 
     /**
      * Запускает сервер.
@@ -365,24 +383,65 @@ class MainViewModel {
         name: String,
         days: Int
     ) {
-        val policy = UpdatePolicy(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            periodDays = days.days
-        )
+        println("addPolicy($name, $days)")
 
-        _policies.value += policy
-        _selectedPolicyId.value = policy.id
+        scope.launch {
+            try {
+                val policy = UpdatePolicy(
+                    id = UUID.randomUUID().toString(),
+                    name = name,
+                    periodDays = days.days
+                )
+
+                updatePolicyRepository.addPolicy(policy)
+
+                _policies.value = updatePolicyRepository.getPolicies()
+                _selectedPolicyId.value = policy.id
+
+                println("Policies: ${_policies.value.size}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
-    fun deletePolicy(id: String) {
+    fun deletePolicy(
+        id: String
+    ) {
 
-        _policies.value = _policies.value.filterNot {
-            it.id == id
-        }
+        scope.launch {
 
-        if (_selectedPolicyId.value == id) {
-            _selectedPolicyId.value = null
+            updatePolicyRepository.deletePolicy(id)
+
+            _policies.value =
+                updatePolicyRepository.getPolicies()
+
+            if (_selectedPolicyId.value == id) {
+                _selectedPolicyId.value =
+                    _policies.value.firstOrNull()?.id
+            }
         }
+    }
+
+    fun updatePolicy(
+        policy: UpdatePolicy
+    ) {
+
+        scope.launch {
+
+            updatePolicyRepository.updatePolicy(policy)
+
+            _policies.value =
+                updatePolicyRepository.getPolicies()
+        }
+    }
+
+    private suspend fun loadPolicies() {
+
+        _policies.value =
+            updatePolicyRepository.getPolicies()
+
+        _selectedPolicyId.value =
+            _policies.value.firstOrNull()?.id
     }
 }

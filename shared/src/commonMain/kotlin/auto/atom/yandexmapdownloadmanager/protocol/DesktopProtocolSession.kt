@@ -73,6 +73,7 @@ class DesktopProtocolSession(
     suspend fun stop() {
 
         receiveJob?.cancel()
+        receiveJob?.join()
         receiveJob = null
 
         pendingRequests.values.forEach {
@@ -132,46 +133,45 @@ class DesktopProtocolSession(
      * Основной цикл обработки входящих сообщений.
      */
     private suspend fun receiveLoop() {
+        try {
+            while (connection.isConnected.value) {
+                val packet = connection.receive() ?: break
 
-        while (connection.isConnected.value) {
+                when (val message = packet.message) {
+                    is Response -> {
+                        pendingRequests[message.id]
+                            ?.complete(message)
+                    }
 
-            val packet = connection.receive() ?: break
+                    is RegionStateNotification -> {
+                        println(
+                            "<<< REGION STATE ${message.payload.regionId} ${message.payload.state}"
+                        )
+                        handleRegionState(message.payload)
+                    }
 
-            when (val message = packet.message) {
+                    is RegionProgressNotification -> {
+                        println(
+                            "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
+                        )
+                        handleRegionProgress(message.payload)
+                    }
 
-                is Response -> {
+                    is Request -> {
+                        // Desktop не принимает Request
+                    }
 
-                    pendingRequests[message.id]
-                        ?.complete(message)
-                }
-
-                is RegionStateNotification -> {
-                    println(
-                        "<<< REGION STATE ${message.payload.regionId} ${message.payload.state}"
-                    )
-
-                    handleRegionState(message.payload)
-                }
-
-                is RegionProgressNotification -> {
-                    println(
-                        "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
-                    )
-
-                    handleRegionProgress(message.payload)
-                }
-                is Request -> {
-                    // Desktop не принимает Request
-                }
-
-                is HelloRequest,
-                is HelloResponse -> {
-                    // Уже обработаны во время handshake()
+                    is HelloRequest,
+                    is HelloResponse -> {
+                        // Уже обработаны во время handshake()
+                    }
                 }
             }
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            // Нормальное завершение
+        } finally {
+            connectionClosed()
         }
-
-        connectionClosed()
     }
 
     private fun handleRegionState(

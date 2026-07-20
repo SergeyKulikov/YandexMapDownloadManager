@@ -40,6 +40,7 @@ fun TimerScreen(
 
         VerticalDivider()
 
+        /*
         AssignedRegionsList(
             regions = regions,
             onDownloadClick = viewModel::regionAction,
@@ -47,5 +48,8 @@ fun TimerScreen(
             formatDate = ::formatDate,
             modifier = Modifier.weight(1f)
         )
+        */
+
+        RegionAssignmentPanel(viewModel)
     }
 }

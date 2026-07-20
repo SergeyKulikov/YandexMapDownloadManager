@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager
 
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -39,4 +40,14 @@ fun OfflineRegionState.localizedName(): String =
         OfflineRegionState.UNSUPPORTED -> "Не поддерживается"
     }
 
+fun List<OfflineRegion>.flatten(): List<OfflineRegion> {
 
+    val result = mutableListOf<OfflineRegion>()
+
+    this.forEach { item ->
+        result.add(item.copy(children = mutableListOf()))
+        result.addAll(item.children.flatten())
+    }
+
+    return result
+}

@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.ui
 
+import auto.atom.yandexmapdownloadmanager.flatten
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
@@ -42,8 +43,6 @@ class MainViewModel {
     private var protocolSession: DesktopProtocolSession? = null
 
     private var protocolApi: DesktopProtocolApi? = null
-
-
 
 
     private val _policies = MutableStateFlow<List<UpdatePolicy>>(emptyList())
@@ -106,29 +105,32 @@ class MainViewModel {
                 _regionAssignments
             ) { regions, selectedPolicyId, assignments ->
 
-                val map = assignments.assignments
+                val flatRegions = regions.flatten()
+                val assignmentsMap = assignments.assignments
 
-                val predicate: (OfflineRegion) -> Boolean =
+                val result =
                     if (selectedPolicyId == null) {
-                        { region ->
-                            !map.containsKey(region.id)
+                        flatRegions.filter {
+                            !assignmentsMap.containsKey(it.id)
                         }
                     } else {
-                        { region ->
-                            map[region.id] == selectedPolicyId
+                        flatRegions.filter {
+                            assignmentsMap[it.id] == selectedPolicyId
                         }
                     }
 
-                regions.mapNotNull {
-                    it.filterTree(predicate)
-                }
+                println("selectedPolicyId=$selectedPolicyId")
+                println("assignments=${assignmentsMap.size}")
+                println("regions=${flatRegions.size}")
+                println("result=${result.size}")
 
-            }.collect {
-                _filteredRegions.value = it
+                result
+
+            }.collect { filtered ->
+                _filteredRegions.value = filtered
             }
         }
     }
-
     /**
      * Запускает сервер.
      */

@@ -1,4 +1,4 @@
-package auto.atom.yandexmapdownloadmanager.ui.theme
+package auto.atom.yandexmapdownloadmanager.theme
 
 import androidx.compose.ui.graphics.Color
 

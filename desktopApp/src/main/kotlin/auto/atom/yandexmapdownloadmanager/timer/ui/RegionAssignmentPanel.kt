@@ -2,6 +2,7 @@ package auto.atom.yandexmapdownloadmanager.timer.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -87,7 +88,7 @@ fun RegionAssignmentPanel(
                     }
 
                     repeat(3 - row.size) {
-                        androidx.compose.foundation.layout.Spacer(
+                        Spacer(
                             modifier = Modifier.weight(1f)
                         )
                     }

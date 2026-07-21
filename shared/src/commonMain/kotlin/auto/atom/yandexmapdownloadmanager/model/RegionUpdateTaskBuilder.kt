@@ -1,7 +1,5 @@
 package auto.atom.yandexmapdownloadmanager.model
 
-import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
-
 /**
  * Формирует список регионов, требующих загрузки или обновления.
  */

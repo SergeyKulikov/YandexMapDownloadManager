@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 
 /**
  * Экран запуска сервера и ожидания подключения Android-устройства.

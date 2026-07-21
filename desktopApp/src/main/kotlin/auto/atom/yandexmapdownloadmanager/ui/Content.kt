@@ -7,6 +7,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import auto.atom.yandexmapdownloadmanager.timer.ui.TimerScreen
+import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
+import auto.atom.yandexmapdownloadmanager.ui.Screen
 
 /**
  * Контейнер содержимого главного окна.

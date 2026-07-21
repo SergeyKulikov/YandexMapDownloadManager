@@ -28,6 +28,7 @@ import atomyandexmapmanager.shared.generated.resources.folder
 import atomyandexmapmanager.shared.generated.resources.map
 import atomyandexmapmanager.shared.generated.resources.storage
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.roundToInt

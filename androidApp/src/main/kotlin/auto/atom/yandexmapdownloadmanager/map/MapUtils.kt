@@ -2,7 +2,7 @@ package auto.atom.yandexmapdownloadmanager.map
 
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionNode
-import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import com.yandex.mapkit.offline_cache.Region
 import com.yandex.mapkit.offline_cache.RegionState
 

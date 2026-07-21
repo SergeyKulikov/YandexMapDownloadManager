@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 
 /**
  * Реализация [Connection] поверх TCP-соединения Ktor.
@@ -149,15 +150,13 @@ internal class KtorConnection(
             println("<<< RECV")
             println(payload.decodeToString())
 
-            val packet = ProtocolJson.decodeFromString(
+            ProtocolJson.decodeFromString(
                 Packet.serializer(),
                 payload.decodeToString()
             )
 
-            println("<<< RECEIVE ${packet.message::class.simpleName}")
-
-            return packet
-
+        } catch (ee: CancellationException) {
+            throw ee
         } catch (e: java.io.EOFException) {
 
             println("<<< Connection closed")

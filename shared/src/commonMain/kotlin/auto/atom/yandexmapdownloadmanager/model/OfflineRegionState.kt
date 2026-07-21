@@ -1,4 +1,4 @@
-package auto.atom.yandexmapdownloadmanager.ui
+package auto.atom.yandexmapdownloadmanager.model
 
 enum class OfflineRegionState {
     AVAILABLE,

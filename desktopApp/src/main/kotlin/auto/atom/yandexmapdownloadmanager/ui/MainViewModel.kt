@@ -2,6 +2,7 @@ package auto.atom.yandexmapdownloadmanager.ui
 
 import auto.atom.yandexmapdownloadmanager.flatten
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
@@ -19,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +30,8 @@ import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import java.util.UUID
+import kotlin.collections.containsKey
+import kotlin.collections.get
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -178,7 +182,7 @@ class MainViewModel {
                     )
 
                     while (serverRunning && connection!!.isConnected.value) {
-                        kotlinx.coroutines.delay(200)
+                        delay(200)
                     }
 
                     runCatching {

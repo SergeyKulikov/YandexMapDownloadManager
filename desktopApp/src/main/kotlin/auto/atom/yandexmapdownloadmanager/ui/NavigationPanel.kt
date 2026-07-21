@@ -35,7 +35,6 @@ import atomyandexmapmanager.shared.generated.resources.disconnected
 import atomyandexmapmanager.shared.generated.resources.handmade
 import atomyandexmapmanager.shared.generated.resources.schedule
 import atomyandexmapmanager.shared.generated.resources.server
-import atomyandexmapmanager.shared.generated.resources.splash_dark
 import atomyandexmapmanager.shared.generated.resources.splash_light
 import atomyandexmapmanager.shared.generated.resources.system_update
 import org.jetbrains.compose.resources.DrawableResource

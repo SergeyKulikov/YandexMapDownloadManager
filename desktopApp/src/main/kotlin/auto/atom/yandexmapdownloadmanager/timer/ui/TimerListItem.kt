@@ -37,6 +37,7 @@ import atomyandexmapmanager.shared.generated.resources.delete
 import atomyandexmapmanager.shared.generated.resources.edit
 import org.jetbrains.compose.resources.painterResource
 
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TimerListItem(

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import auto.atom.yandexmapdownloadmanager.formatDate
 import auto.atom.yandexmapdownloadmanager.formatSize
 import auto.atom.yandexmapdownloadmanager.model.CountryGeoID
+import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 
 /**
  * Экран работы с офлайн-картами.

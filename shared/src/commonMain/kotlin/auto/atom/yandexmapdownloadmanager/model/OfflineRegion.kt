@@ -1,6 +1,5 @@
 package auto.atom.yandexmapdownloadmanager.model
 
-import auto.atom.yandexmapdownloadmanager.ui.OfflineRegionState
 import kotlinx.serialization.Serializable
 
 @Serializable

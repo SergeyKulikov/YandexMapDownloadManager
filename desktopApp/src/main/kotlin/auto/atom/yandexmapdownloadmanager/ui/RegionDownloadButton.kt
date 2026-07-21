@@ -21,9 +21,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.cloud_download
-import atomyandexmapmanager.shared.generated.resources.delete
 import atomyandexmapmanager.shared.generated.resources.pause
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 

@@ -16,12 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.add_box
 import auto.atom.yandexmapdownloadmanager.filterRegions
-import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
-import auto.atom.yandexmapdownloadmanager.timer.model.RegionTransferData
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 import org.jetbrains.compose.resources.painterResource

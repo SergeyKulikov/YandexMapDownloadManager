@@ -68,6 +68,13 @@ kotlin {
     }
 }
 
+compose {
+    resources {
+        publicResClass = true
+        packageOfResClass = "atomyandexmapmanager.shared.generated.resources"
+    }
+}
+
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }

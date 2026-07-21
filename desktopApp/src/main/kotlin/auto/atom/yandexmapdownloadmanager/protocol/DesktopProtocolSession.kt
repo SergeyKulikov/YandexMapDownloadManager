@@ -10,6 +10,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,7 +84,7 @@ class DesktopProtocolSession(
 
             scope.cancel()
         } catch (ex: Exception) {
-            ex.printStackTrace()
+            // ex.printStackTrace()
         }
     }
 
@@ -169,7 +170,7 @@ class DesktopProtocolSession(
                     }
                 }
             }
-        } catch (_: kotlinx.coroutines.CancellationException) {
+        } catch (_: CancellationException) {
             // Нормальное завершение
         } finally {
             connectionClosed()

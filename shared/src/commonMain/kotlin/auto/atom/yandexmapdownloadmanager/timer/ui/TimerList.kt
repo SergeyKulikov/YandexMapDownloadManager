@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.add_box
+import auto.atom.yandexmapdownloadmanager.filterRegions
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionTransferData
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import auto.atom.yandexmapdownloadmanager.ui.MainViewModel
 import org.jetbrains.compose.resources.painterResource
@@ -38,8 +41,11 @@ fun TimerList(
         mutableStateOf(false)
     }
 
-    if (showAddDialog) {
+    var editingPolicy by remember {
+        mutableStateOf<UpdatePolicy?>(null)
+    }
 
+    if (showAddDialog) {
         AddPolicyDialog(
             onDismiss = {
                 showAddDialog = false
@@ -47,7 +53,27 @@ fun TimerList(
             onConfirm = { name, days ->
                 onAdd(name, days)
                 showAddDialog = false
-            }
+            },
+            isEdit = false
+        )
+    }
+
+    editingPolicy?.let { policy ->
+        AddPolicyDialog(
+            initialName = policy.name,
+            initialDays = policy.periodDays.inWholeDays.toInt(),
+            onDismiss = {
+                editingPolicy = null
+            },
+            onConfirm = { name, days ->
+                viewModel.editPolicy(
+                    id = policy.id,
+                    name = name,
+                    days = days
+                )
+                editingPolicy = null
+            },
+            isEdit = true
         )
     }
 
@@ -87,13 +113,23 @@ fun TimerList(
 
         Spacer(Modifier.height(12.dp))
 
+         val allRegions by viewModel.regions.collectAsState()
+        val assignments by viewModel.regionAssignments.collectAsState()
+
         policies.forEach { policy ->
+
+            val count = filterRegions(allRegions, policy.id, assignments).size
 
             TimerListItem(
                 title = policy.name,
+                periodDays = policy.periodDays.inWholeDays.toInt(),
+                regionCount = count,
                 selected = policy.id == selectedPolicyId,
                 onClick = {
                     onSelect(policy.id)
+                },
+                onEdit = {
+                    editingPolicy = policy
                 },
                 onDelete = {
                     onDelete(policy.id)
@@ -105,14 +141,25 @@ fun TimerList(
                     )
                 }
             )
+
+            Spacer(Modifier.height(12.dp))
         }
+
+        val count = filterRegions(
+            allRegions,
+            null,
+            assignments
+        ).size
 
         TimerListItem(
             title = "Не назначено",
             selected = selectedPolicyId == null,
+            periodDays = 0,
+            regionCount = count,
             onClick = {
                 onSelect(null)
             },
+            onEdit = null,
             onDelete = null,
             onRegionDropped = { regionId, _ ->
                 viewModel.addRegionToPeriod(

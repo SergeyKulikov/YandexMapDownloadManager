@@ -57,7 +57,6 @@ class DesktopProtocolSession(
      * Запускает обработку входящих сообщений.
      */
     fun start() {
-
         if (receiveJob != null) {
             return
         }
@@ -71,18 +70,21 @@ class DesktopProtocolSession(
      * Останавливает обработку сообщений.
      */
     suspend fun stop() {
+        try {
+            receiveJob?.cancel()
+            receiveJob?.join()
+            receiveJob = null
 
-        receiveJob?.cancel()
-        receiveJob?.join()
-        receiveJob = null
+            pendingRequests.values.forEach {
+                it.cancel()
+            }
 
-        pendingRequests.values.forEach {
-            it.cancel()
+            pendingRequests.clear()
+
+            scope.cancel()
+        } catch (ex: Exception) {
+            ex.printStackTrace()
         }
-
-        pendingRequests.clear()
-
-        scope.cancel()
     }
 
 

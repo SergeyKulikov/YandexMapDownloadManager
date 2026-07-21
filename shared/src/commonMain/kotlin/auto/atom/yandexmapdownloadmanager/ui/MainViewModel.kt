@@ -445,12 +445,39 @@ class MainViewModel {
         }
     }
 
+    fun editPolicy(
+        id: String,
+        name: String,
+        days: Int
+    ) {
+        println("editPolicy($id, $name, $days)")
+
+        scope.launch {
+            try {
+                val policy = UpdatePolicy(
+                    id = id,
+                    name = name,
+                    periodDays = days.days
+                )
+
+                updatePolicyRepository.updatePolicy(policy)
+
+                _policies.value = updatePolicyRepository.getPolicies()
+                _selectedPolicyId.value = id
+
+                println("Policies: ${_policies.value.size}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+
     fun deletePolicy(
         id: String
     ) {
 
         scope.launch {
-
             updatePolicyRepository.deletePolicy(id)
 
             _policies.value =
@@ -463,18 +490,20 @@ class MainViewModel {
         }
     }
 
+
+    /*
     fun updatePolicy(
         policy: UpdatePolicy
     ) {
 
         scope.launch {
-
             updatePolicyRepository.updatePolicy(policy)
 
             _policies.value =
                 updatePolicyRepository.getPolicies()
         }
     }
+    */
 
     private suspend fun loadPolicies() {
 

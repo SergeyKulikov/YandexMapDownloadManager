@@ -17,23 +17,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-
 @Composable
 fun AddPolicyDialog(
+    initialName: String = "",
+    initialDays: Int = 30,
+    isEdit: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String, Int) -> Unit
 ) {
 
-    var name by remember { mutableStateOf("") }
-    var days by remember { mutableStateOf("") }
+    var name by remember(initialName) {
+        mutableStateOf(initialName)
+    }
+
+    var days by remember(initialDays) {
+        mutableStateOf(initialDays.toString())
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Новый период")
+            Text(
+                if (isEdit)
+                    "Редактирование периода"
+                else
+                    "Новый период"
+            )
         },
         text = {
-
             Column {
 
                 OutlinedTextField(
@@ -65,21 +76,24 @@ fun AddPolicyDialog(
             }
         },
         confirmButton = {
-
             TextButton(
                 enabled = name.isNotBlank() && days.toIntOrNull() != null,
                 onClick = {
                     onConfirm(
-                        name,
+                        name.trim(),
                         days.toInt()
                     )
                 }
             ) {
-                Text("Добавить")
+                Text(
+                    if (isEdit)
+                        "Сохранить"
+                    else
+                        "Добавить"
+                )
             }
         },
         dismissButton = {
-
             TextButton(
                 onClick = onDismiss
             ) {

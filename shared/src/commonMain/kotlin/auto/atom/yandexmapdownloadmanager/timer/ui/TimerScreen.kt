@@ -22,9 +22,6 @@ fun TimerScreen(
 
     val policies by viewModel.policies.collectAsState()
     val selectedPolicyId by viewModel.selectedPolicyId.collectAsState()
-    val regions by viewModel.filteredRegions.collectAsState()
-
-    val dragState = remember { DragState() }
 
     Row(
         modifier = Modifier.fillMaxSize()
@@ -33,7 +30,7 @@ fun TimerScreen(
         TimerList(
             viewModel = viewModel,
             modifier = Modifier
-                .width(260.dp)
+                .width(350.dp)
                 .fillMaxHeight(),
             policies = policies,
             selectedPolicyId = selectedPolicyId,

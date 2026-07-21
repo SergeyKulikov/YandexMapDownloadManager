@@ -35,9 +35,7 @@ class JsonUpdatePolicyRepository(
     override suspend fun addPolicy(
         policy: UpdatePolicy
     ) {
-
         val list = getPolicies().toMutableList()
-
         list += policy
 
         save(list)
@@ -46,7 +44,6 @@ class JsonUpdatePolicyRepository(
     override suspend fun updatePolicy(
         policy: UpdatePolicy
     ) {
-
         val list = getPolicies().map {
             if (it.id == policy.id) {
                 policy
@@ -61,7 +58,6 @@ class JsonUpdatePolicyRepository(
     override suspend fun deletePolicy(
         id: String
     ) {
-
         val list = getPolicies().filterNot {
             it.id == id
         }
@@ -72,7 +68,6 @@ class JsonUpdatePolicyRepository(
     private fun save(
         policies: List<UpdatePolicy>
     ) {
-
         file.parent?.let {
             fileSystem.createDirectories(it)
         }

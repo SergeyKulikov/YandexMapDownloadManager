@@ -9,6 +9,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.timer.AutoUpdateManager
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
@@ -84,7 +85,6 @@ class MainViewModel {
      */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-
     private val updatePolicyRepository = JsonUpdatePolicyRepository(
         fileSystem = FileSystem.SYSTEM,
         file = "config/update_policies.json".toPath()
@@ -110,6 +110,25 @@ class MainViewModel {
 
     val downloadStates: StateFlow<List<RegionDownloadState>> =
         _downloadStates.asStateFlow()
+
+    private val autoUpdateManager = AutoUpdateManager(
+        scope = scope,
+        onDownloadRegion = ::autoUpdateRegion,
+        regions = regions,
+        policies = policies,
+        assignments = regionAssignments,
+        downloadStates = downloadStates,
+        onDownloadStarted = { regionId ->
+            regionDownloadRepository.updateState(
+                RegionDownloadState(
+                    regionId = regionId,
+                    lastSuccessfulDownloadMillis = System.currentTimeMillis()
+                )
+            )
+
+            reloadDownloadStates()
+        }
+    )
 
     init {
         scope.launch {
@@ -155,6 +174,7 @@ class MainViewModel {
      * Запускает сервер.
      */
     fun startServer() {
+
         if (serverRunning) {
             return
         }
@@ -162,7 +182,9 @@ class MainViewModel {
         serverRunning = true
 
         serverJob = scope.launch {
+
             try {
+
                 _uiState.value = _uiState.value.copy(
                     isBusy = true,
                     isServerRunning = false,
@@ -192,14 +214,23 @@ class MainViewModel {
 
                     getRegionsFromClient()
 
+                    // Запускаем автоматические проверки после получения списка регионов.
+                    autoUpdateManager.start()
+
                     _uiState.value = _uiState.value.copy(
                         isClientConnected = true,
                         status = "Клиент подключен"
                     )
 
-                    while (serverRunning && connection!!.isConnected.value) {
+                    while (
+                        serverRunning &&
+                        connection!!.isConnected.value
+                    ) {
                         delay(200)
                     }
+
+                    // Клиент отключился.
+                    autoUpdateManager.stop()
 
                     runCatching {
                         protocolSession?.stop()
@@ -221,7 +252,11 @@ class MainViewModel {
                         )
                     }
                 }
+
             } catch (e: Exception) {
+
+                autoUpdateManager.stop()
+
                 if (serverRunning) {
                     _uiState.value = _uiState.value.copy(
                         isBusy = false,
@@ -230,8 +265,12 @@ class MainViewModel {
                         status = e.message ?: "Ошибка"
                     )
                 }
+
             } finally {
+
                 serverRunning = false
+
+                autoUpdateManager.stop()
 
                 runCatching {
                     protocolSession?.stop()
@@ -254,7 +293,6 @@ class MainViewModel {
             }
         }
     }
-
     private suspend fun getRegionsFromClient() {
         _regions.value = requireNotNull(protocolApi).getRegions()
 
@@ -343,45 +381,45 @@ class MainViewModel {
         )
     }
 
-    fun regionAction(region: OfflineRegion) {
+    fun regionAction(
+        region: OfflineRegion
+    ) {
         scope.launch {
             try {
-                when (region.state) {
-
-                    OfflineRegionState.AVAILABLE -> {
-                        requireNotNull(protocolApi)
-                            .downloadRegion(region.id)
-                    }
-
-                    OfflineRegionState.DOWNLOADING -> {
-                        requireNotNull(protocolApi)
-                            .pauseRegion(region.id)
-                    }
-
-                    OfflineRegionState.PAUSED -> {
-                        requireNotNull(protocolApi)
-                            .resumeRegion(region.id)
-                    }
-
-                    OfflineRegionState.COMPLETED -> {
-                        requireNotNull(protocolApi)
-                            .deleteRegion(region.id)
-                    }
-
-                    OfflineRegionState.OUTDATED,
-                    OfflineRegionState.NEED_UPDATE -> {
-                        requireNotNull(protocolApi)
-                            .downloadRegion(region.id)
-                    }
-
-                    OfflineRegionState.UNSUPPORTED -> {
-                        // Ничего не делаем.
-                    }
-                }
-
+                performRegionAction(region)
             } catch (_: Exception) {
             }
         }
+    }
+
+    fun autoUpdateRegion(
+        regionId: Int
+    ) {
+        val region =
+            regions.value
+                .flatten()
+                .firstOrNull { it.id == regionId }
+                ?: return
+
+        scope.launch {
+            try {
+                performRegionAction(region)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
+     * Выполняет действие загрузки или обновления региона.
+     *
+     * Используется как при ручном запуске пользователем,
+     * так и автоматическим планировщиком.
+     */
+    suspend fun downloadRegion(
+        regionId: Int
+    ) {
+        requireNotNull(protocolApi)
+            .downloadRegion(regionId)
     }
 
     private fun updateRegionState(
@@ -616,5 +654,39 @@ class MainViewModel {
 
     private suspend fun reloadDownloadStates() {
         _downloadStates.value = regionDownloadRepository.getStates()
+    }
+
+
+    private suspend fun performRegionAction(
+        region: OfflineRegion
+    ) {
+        when (region.state) {
+            OfflineRegionState.AVAILABLE -> {
+                downloadRegion(region.id)
+            }
+
+            OfflineRegionState.OUTDATED,
+            OfflineRegionState.NEED_UPDATE -> {
+                downloadRegion(region.id)
+            }
+
+            OfflineRegionState.DOWNLOADING -> {
+                requireNotNull(protocolApi)
+                    .pauseRegion(region.id)
+            }
+
+            OfflineRegionState.PAUSED -> {
+                requireNotNull(protocolApi)
+                    .resumeRegion(region.id)
+            }
+
+            OfflineRegionState.COMPLETED -> {
+                requireNotNull(protocolApi)
+                    .deleteRegion(region.id)
+            }
+
+            OfflineRegionState.UNSUPPORTED -> {
+            }
+        }
     }
 }

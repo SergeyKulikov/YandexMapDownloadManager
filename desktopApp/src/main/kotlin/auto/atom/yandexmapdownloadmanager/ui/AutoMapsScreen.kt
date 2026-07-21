@@ -16,11 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import auto.atom.yandexmapdownloadmanager.flatten
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
 import auto.atom.yandexmapdownloadmanager.model.UpdateReason
 
 private sealed interface TimerListItem {
-
     data class Header(
         val letter: Char
     ) : TimerListItem
@@ -70,7 +70,7 @@ fun AutoMapsScreen(
                     }
 
                 val reason =
-                    if (region.state == auto.atom.yandexmapdownloadmanager.model.OfflineRegionState.AVAILABLE)
+                    if (region.state == OfflineRegionState.AVAILABLE)
                         UpdateReason.NOT_DOWNLOADED
                     else
                         UpdateReason.NEW_VERSION_AVAILABLE
@@ -88,8 +88,12 @@ fun AutoMapsScreen(
         buildList {
 
             timerItems
-                .sortedBy { it.task.region.name.lowercase() }
-                .groupBy { it.task.region.name.first().uppercaseChar() }
+                .sortedBy {
+                    it.task.region.name.lowercase()
+                }
+                .groupBy {
+                    it.task.region.name.first().uppercaseChar()
+                }
                 .toSortedMap()
                 .forEach { (letter, items) ->
 
@@ -147,6 +151,7 @@ fun AutoMapsScreen(
                 is TimerListItem.Region -> {
 
                     RegionUpdateItem(
+                        region = item.task.region,
                         task = item.task,
                         policy = item.policy,
                         downloadState = item.downloadState

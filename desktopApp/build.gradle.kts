@@ -33,10 +33,10 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "auto.atom.yandexmapdownloadmanager"
+            packageName = "Yandexmap Download Manager" // "auto.atom.yandexmapdownloadmanager"
             packageVersion = "1.0.0"
             description = "Application for downloading offline Yandex maps."
-            copyright = "Created by Sergey Kulikov"
+            copyright = "© 2026 Joint Stock Company \"KAMA\". Created by Sergey Kulikov."
 
             windows {
                 iconFile.set(project.file("../shared/src/commonMain/composeResources/drawable/app_icon_wnd.ico"))

@@ -10,8 +10,10 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import auto.atom.yandexmapdownloadmanager.timer.repository.JsonRegionAssignmentRepository
+import auto.atom.yandexmapdownloadmanager.timer.repository.JsonRegionDownloadRepository
 import auto.atom.yandexmapdownloadmanager.timer.repository.JsonUpdatePolicyRepository
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.KtorTcpServer
@@ -96,10 +98,24 @@ class MainViewModel {
     private val _regionAssignments = MutableStateFlow(RegionAssignments())
     val regionAssignments = _regionAssignments.asStateFlow()
 
+
+
+    private val regionDownloadRepository = JsonRegionDownloadRepository(
+        fileSystem = FileSystem.SYSTEM,
+        file = "config/region_download_states.json".toPath()
+    )
+
+    private val _downloadStates =
+        MutableStateFlow<List<RegionDownloadState>>(emptyList())
+
+    val downloadStates: StateFlow<List<RegionDownloadState>> =
+        _downloadStates.asStateFlow()
+
     init {
         scope.launch {
             loadPolicies()
             loadRegionAssignments()
+            loadDownloadStates()
         }
 
         scope.launch {
@@ -552,14 +568,53 @@ class MainViewModel {
         }
     }
 
-
+    /**
+     * Назначает регион указанному периоду автоматического обновления.
+     *
+     * Если регион впервые добавляется в расписание, для него автоматически
+     * создается запись о состоянии загрузки. В качестве времени последнего
+     * успешного обновления устанавливается текущее время минус период обновления,
+     * благодаря чему при первом запуске таймера регион сразу считается
+     * требующим обновления.
+     *
+     * @param policyId Идентификатор периода обновления или `null` для удаления
+     * назначения региона.
+     * @param regionId Идентификатор региона.
+     */
     fun addRegionToPeriod(
         policyId: String?,
         regionId: Int
     ) {
-        assignRegion(
-            regionId = regionId,
-            policyId = policyId
-        )
+        scope.launch {
+
+            assignRegion(
+                regionId = regionId,
+                policyId = policyId
+            )
+
+            if (policyId == null) {
+                return@launch
+            }
+
+            if (regionDownloadRepository.getState(regionId) == null) {
+
+                regionDownloadRepository.updateState(
+                    RegionDownloadState(
+                        regionId = regionId
+                    )
+                )
+
+                reloadDownloadStates()
+            }
+        }
+    }
+
+    private suspend fun loadDownloadStates() {
+        _downloadStates.value =
+            regionDownloadRepository.getStates()
+    }
+
+    private suspend fun reloadDownloadStates() {
+        _downloadStates.value = regionDownloadRepository.getStates()
     }
 }

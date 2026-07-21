@@ -29,6 +29,13 @@ fun formatDate(time: Long): String {
     ).format(Date(time))
 }
 
+fun formatShortDate(time: Long): String {
+    return SimpleDateFormat(
+        "dd.MM.yyyy",
+        Locale.getDefault()
+    ).format(Date(time))
+}
+
 fun OfflineRegionState.localizedName(): String =
     when (this) {
         OfflineRegionState.AVAILABLE -> "Не загружен"

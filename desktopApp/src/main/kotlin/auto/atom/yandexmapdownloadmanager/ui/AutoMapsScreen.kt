@@ -1,6 +1,7 @@
 package auto.atom.yandexmapdownloadmanager.ui
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -14,9 +15,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import auto.atom.yandexmapdownloadmanager.model.UpdateListItem
-import auto.atom.yandexmapdownloadmanager.model.buildUpdateQueue
-import androidx.compose.foundation.layout.*
+import auto.atom.yandexmapdownloadmanager.flatten
+import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
+import auto.atom.yandexmapdownloadmanager.model.UpdateReason
+
+private sealed interface TimerListItem {
+
+    data class Header(
+        val letter: Char
+    ) : TimerListItem
+
+    data class Region(
+        val task: RegionUpdateTask,
+        val policy: auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy,
+        val downloadState: auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState?
+    ) : TimerListItem
+}
 
 @Composable
 fun AutoMapsScreen(
@@ -24,33 +38,73 @@ fun AutoMapsScreen(
 ) {
 
     val regions by viewModel.regions.collectAsState()
+    val policies by viewModel.policies.collectAsState()
+    val assignments by viewModel.regionAssignments.collectAsState()
+    val downloadStates by viewModel.downloadStates.collectAsState()
 
+    val listItems = remember(
+        regions,
+        policies,
+        assignments,
+        downloadStates
+    ) {
 
-    println(regions.toString())
+        val flatRegions = regions.flatten()
 
-    val listItems = remember(regions) {
+        val timerItems =
+            assignments.assignments.mapNotNull { (regionId, policyId) ->
+
+                val region =
+                    flatRegions.firstOrNull {
+                        it.id == regionId
+                    } ?: return@mapNotNull null
+
+                val policy =
+                    policies.firstOrNull {
+                        it.id == policyId
+                    } ?: return@mapNotNull null
+
+                val downloadState =
+                    downloadStates.firstOrNull {
+                        it.regionId == regionId
+                    }
+
+                val reason =
+                    if (region.state == auto.atom.yandexmapdownloadmanager.model.OfflineRegionState.AVAILABLE)
+                        UpdateReason.NOT_DOWNLOADED
+                    else
+                        UpdateReason.NEW_VERSION_AVAILABLE
+
+                TimerListItem.Region(
+                    task = RegionUpdateTask(
+                        region = region,
+                        reason = reason
+                    ),
+                    policy = policy,
+                    downloadState = downloadState
+                )
+            }
+
         buildList {
 
-            regions
-                .buildUpdateQueue()
-                .sortedBy { it.region.name.lowercase() }
-                .groupBy { it.region.name.first().uppercaseChar() }
+            timerItems
+                .sortedBy { it.task.region.name.lowercase() }
+                .groupBy { it.task.region.name.first().uppercaseChar() }
                 .toSortedMap()
-                .forEach { (letter, tasks) ->
+                .forEach { (letter, items) ->
 
-                    add(UpdateListItem.Header(letter))
+                    add(
+                        TimerListItem.Header(letter)
+                    )
 
-                    tasks.forEach {
-                        add(UpdateListItem.Region(it))
-                    }
+                    addAll(items)
                 }
         }
     }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(8.dp)
     ) {
 
@@ -58,16 +112,19 @@ fun AutoMapsScreen(
             items = listItems,
             key = {
                 when (it) {
-                    is UpdateListItem.Header -> "header_${it.letter}"
-                    is UpdateListItem.Region -> it.task.region.id
+                    is TimerListItem.Header ->
+                        "header_${it.letter}"
+
+                    is TimerListItem.Region ->
+                        it.task.region.id
                 }
             },
             span = {
                 when (it) {
-                    is UpdateListItem.Header ->
+                    is TimerListItem.Header ->
                         GridItemSpan(maxLineSpan)
 
-                    is UpdateListItem.Region ->
+                    is TimerListItem.Region ->
                         GridItemSpan(1)
                 }
             }
@@ -75,7 +132,7 @@ fun AutoMapsScreen(
 
             when (item) {
 
-                is UpdateListItem.Header -> {
+                is TimerListItem.Header -> {
 
                     Text(
                         text = item.letter.toString(),
@@ -87,12 +144,15 @@ fun AutoMapsScreen(
                     )
                 }
 
-                is UpdateListItem.Region -> {
+                is TimerListItem.Region -> {
 
-                    RegionUpdateItem(item.task)
+                    RegionUpdateItem(
+                        task = item.task,
+                        policy = item.policy,
+                        downloadState = item.downloadState
+                    )
                 }
             }
         }
     }
 }
-

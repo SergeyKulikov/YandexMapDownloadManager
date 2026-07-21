@@ -1,6 +1,8 @@
 package auto.atom.yandexmapdownloadmanager.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,45 +15,97 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.chevron_right
-import atomyandexmapmanager.shared.generated.resources.cloud_download
 import atomyandexmapmanager.shared.generated.resources.system_update
+import auto.atom.yandexmapdownloadmanager.formatDate
+import auto.atom.yandexmapdownloadmanager.formatShortDate
+import auto.atom.yandexmapdownloadmanager.localizedName
 import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
-import auto.atom.yandexmapdownloadmanager.model.UpdateReason
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
+import auto.atom.yandexmapdownloadmanager.timer.model.ScheduledUpdateStatus
+import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 import org.jetbrains.compose.resources.painterResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RegionUpdateItem(
-    task: RegionUpdateTask
+    task: RegionUpdateTask,
+    policy: UpdatePolicy,
+    downloadState: RegionDownloadState?
 ) {
 
-    val icon: Painter
-    val textColor: Color
-    val description: String
+    val lastDownloadMillis =
+        downloadState?.lastSuccessfulDownloadMillis ?: 0L
 
-    when (task.reason) {
-
-        UpdateReason.NOT_DOWNLOADED -> {
-            icon = painterResource(Res.drawable.cloud_download)
-            textColor = Color(0xFFFF8C00)
-            description = "Не загружен"
+    val lastDownloadText =
+        if (lastDownloadMillis == 0L) {
+            "Никогда"
+        } else {
+            formatDate(lastDownloadMillis)
         }
 
-        UpdateReason.NEW_VERSION_AVAILABLE -> {
-            icon = painterResource(Res.drawable.system_update)
-            textColor = MaterialTheme.colorScheme.primary
-            description = "Доступно обновление"
+    val nextDownloadMillis =
+        if (lastDownloadMillis == 0L) {
+            0L
+        } else {
+            lastDownloadMillis + policy.periodDays.inWholeMilliseconds
         }
-    }
+
+    val status =
+        when {
+            lastDownloadMillis == 0L ->
+                ScheduledUpdateStatus.NOW
+
+            nextDownloadMillis <= System.currentTimeMillis() ->
+                ScheduledUpdateStatus.OVERDUE
+
+            else ->
+                ScheduledUpdateStatus.PLANNED
+        }
+
+    val scheduleTitle =
+        when (status) {
+            ScheduledUpdateStatus.NOW ->
+                "Первое обновление"
+
+            ScheduledUpdateStatus.OVERDUE ->
+                "Требуется обновление"
+
+            ScheduledUpdateStatus.PLANNED ->
+                "Запланировано"
+        }
+
+    val scheduleValue =
+        when (status) {
+            ScheduledUpdateStatus.NOW ->
+                "сейчас"
+
+            ScheduledUpdateStatus.OVERDUE ->
+                "с ${formatShortDate(nextDownloadMillis)}"
+
+            ScheduledUpdateStatus.PLANNED ->
+                formatShortDate(nextDownloadMillis)
+        }
+
+    val tooltipText =
+        when (status) {
+            ScheduledUpdateStatus.NOW ->
+                "Регион еще ни разу не обновлялся автоматически. Первое обновление будет выполнено при ближайшей автоматической проверке."
+
+            ScheduledUpdateStatus.OVERDUE ->
+                "Дата планового обновления уже прошла. Регион будет обновлен при следующей автоматической проверке."
+
+            ScheduledUpdateStatus.PLANNED ->
+                "Автоматическое обновление региона запланировано на указанную дату."
+        }
 
     Card(
         modifier = Modifier
@@ -75,10 +129,10 @@ fun RegionUpdateItem(
         ) {
 
             Icon(
-                painter = icon,
+                painter = painterResource(Res.drawable.system_update),
                 contentDescription = null,
                 modifier = Modifier.size(36.dp),
-                tint = textColor
+                tint = MaterialTheme.colorScheme.primary
             )
 
             Spacer(
@@ -87,7 +141,7 @@ fun RegionUpdateItem(
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
                 Text(
@@ -98,10 +152,44 @@ fun RegionUpdateItem(
                 )
 
                 Text(
-                    text = description,
+                    text = policy.name,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = textColor
+                    color = MaterialTheme.colorScheme.primary
                 )
+
+                InfoRow(
+                    title = "Статус карты",
+                    value = task.region.state.localizedName()
+                )
+
+                InfoRow(
+                    title = "Версия карты",
+                    value = formatShortDate(task.region.releaseTime)
+                )
+
+                InfoRow(
+                    title = "Последнее обновление",
+                    value = lastDownloadText
+                )
+
+                TooltipArea(
+                    tooltip = {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            tonalElevation = 4.dp
+                        ) {
+                            Text(
+                                text = tooltipText,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                ) {
+                    InfoRow(
+                        title = scheduleTitle,
+                        value = scheduleValue
+                    )
+                }
             }
 
             Icon(
@@ -111,5 +199,30 @@ fun RegionUpdateItem(
                 tint = MaterialTheme.colorScheme.outline
             )
         }
+    }
+}
+
+@Composable
+private fun InfoRow(
+    title: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

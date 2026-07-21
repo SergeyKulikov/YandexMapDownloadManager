@@ -35,6 +35,14 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "auto.atom.yandexmapdownloadmanager"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("src/commonMain/composeResources/drawable/app_icon_wnd.ico"))
+            }
+
+            linux {
+                iconFile.set(project.file("src/commonMain/composeResources/drawable/app_icon.png"))
+            }
         }
     }
 }

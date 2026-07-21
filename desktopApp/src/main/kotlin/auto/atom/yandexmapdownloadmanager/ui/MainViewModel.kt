@@ -87,12 +87,15 @@ class MainViewModel {
 
     private val updatePolicyRepository = JsonUpdatePolicyRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = "config/update_policies.json".toPath()
+        file = (
+                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/update_policies.json"
+                ).toPath()
     )
-
     private val regionAssignmentRepository = JsonRegionAssignmentRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = "config/region_assignments.json".toPath()
+        file = (
+                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/region_assignments.json"
+                ).toPath()
     )
 
     private val _regionAssignments = MutableStateFlow(RegionAssignments())
@@ -102,7 +105,9 @@ class MainViewModel {
 
     private val regionDownloadRepository = JsonRegionDownloadRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = "config/region_download_states.json".toPath()
+        file = (
+                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/region_download_states.json"
+                ).toPath()
     )
 
     private val _downloadStates =

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.calendar
+import atomyandexmapmanager.shared.generated.resources.delete
 import atomyandexmapmanager.shared.generated.resources.folder
 import atomyandexmapmanager.shared.generated.resources.map
 import atomyandexmapmanager.shared.generated.resources.storage
@@ -39,6 +42,7 @@ fun OfflineRegionItem(
     region: OfflineRegion,
     level: Int,
     onDownloadClick: (OfflineRegion) -> Unit,
+    onDeleteClick: (OfflineRegion) -> Unit,
     formatSize: (Long) -> String,
     formatDate: (Long) -> String
 ) {
@@ -200,13 +204,40 @@ fun OfflineRegionItem(
                             }
                         }
 
-                        RegionDownloadButton(
-                            region = region,
-                            level = level,
-                            onClick = {
-                                onDownloadClick(region)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            RegionDownloadButton(
+                                region = region,
+                                level = level,
+                                onClick = {
+                                    onDownloadClick(region)
+                                }
+                            )
+
+                            val canDelete = region.state != OfflineRegionState.AVAILABLE &&
+                                    region.state != OfflineRegionState.UNSUPPORTED
+
+                            if (canDelete) {
+
+                                IconButton(
+                                    onClick = {
+                                        onDeleteClick(region)
+                                    }
+                                ) {
+
+                                    Image(
+                                        painter = painterResource(Res.drawable.delete),
+                                        contentDescription = "Удалить регион",
+                                        modifier = Modifier.size(20.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            MaterialTheme.colorScheme.error
+                                        )
+                                    )
+                                }
                             }
-                        )
+                        }
                     }
 
                     AnimatedVisibility(
@@ -265,6 +296,7 @@ fun OfflineRegionItem(
                             region = child,
                             level = level + 1,
                             onDownloadClick = onDownloadClick,
+                            onDeleteClick = onDeleteClick,
                             formatSize = formatSize,
                             formatDate = formatDate
                         )

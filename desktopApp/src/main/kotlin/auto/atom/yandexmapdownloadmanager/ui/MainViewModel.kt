@@ -689,4 +689,53 @@ class MainViewModel {
             }
         }
     }
+
+
+    fun deleteRegion(
+        region: OfflineRegion
+    ) {
+        scope.launch {
+            try {
+
+                requireNotNull(protocolApi)
+                    .deleteRegion(region.id)
+
+                // Карта удалена, теперь сбрасываем данные автозагрузки
+                regionDownloadRepository.deleteState(
+                    region.id
+                )
+
+                reloadDownloadStates()
+
+                // Обновляем отображение региона
+                _regions.value = _regions.value.map {
+                    it.resetRegionState(region.id)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun OfflineRegion.resetRegionState(
+        regionId: Int
+    ): OfflineRegion {
+
+        val newChildren = children.map {
+            it.resetRegionState(regionId)
+        }.toMutableList()
+
+        return if (id == regionId) {
+            copy(
+                state = OfflineRegionState.AVAILABLE,
+                downloadProgress = null,
+                children = newChildren
+            )
+        } else {
+            copy(
+                children = newChildren
+            )
+        }
+    }
 }

@@ -91,6 +91,9 @@ fun HandmadeMapsScreen(
                 onDownloadClick = { region ->
                     viewModel.regionAction(region)
                 },
+                onDeleteClick = { region ->
+                    viewModel.deleteRegion(region)
+                },
                 formatSize = ::formatSize,
                 formatDate = ::formatDate
             )

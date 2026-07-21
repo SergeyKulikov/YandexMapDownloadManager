@@ -20,6 +20,7 @@ import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 fun OfflineRegionTree(
     regions: List<OfflineRegion>,
     onDownloadClick: (OfflineRegion) -> Unit,
+    onDeleteClick: (OfflineRegion) -> Unit,
     formatSize: (Long) -> String,
     formatDate: (Long) -> String,
     modifier: Modifier = Modifier
@@ -72,6 +73,7 @@ fun OfflineRegionTree(
                         region = row[0],
                         level = 0,
                         onDownloadClick = onDownloadClick,
+                        onDeleteClick = onDeleteClick,
                         formatSize = formatSize,
                         formatDate = formatDate
                     )
@@ -83,6 +85,7 @@ fun OfflineRegionTree(
                             region = row[1],
                             level = 0,
                             onDownloadClick = onDownloadClick,
+                            onDeleteClick = onDeleteClick,
                             formatSize = formatSize,
                             formatDate = formatDate
                         )

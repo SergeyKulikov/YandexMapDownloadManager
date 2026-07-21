@@ -156,6 +156,18 @@ fun RegionUpdateItem(
         }
     }
 
+    val containerColor =
+        when (region.state) {
+            OfflineRegionState.DOWNLOADING ->
+                MaterialTheme.colorScheme.primaryContainer
+
+            OfflineRegionState.PAUSED ->
+                MaterialTheme.colorScheme.secondaryContainer
+
+            else ->
+                MaterialTheme.colorScheme.surface
+        }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,7 +178,7 @@ fun RegionUpdateItem(
             MaterialTheme.colorScheme.outlineVariant
         ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = containerColor
         )
     ) {
 

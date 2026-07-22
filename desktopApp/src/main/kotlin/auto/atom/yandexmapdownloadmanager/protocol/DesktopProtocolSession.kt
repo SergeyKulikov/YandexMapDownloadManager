@@ -1,15 +1,19 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
+import auto.atom.yandexmapdownloadmanager.model.FileTransferState
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionFileChunkPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
+import auto.atom.yandexmapdownloadmanager.protocol.model.Status
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +22,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.decodeFromJsonElement
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -53,6 +60,10 @@ class DesktopProtocolSession(
     private var onRegionProgressChanged: ((RegionProgressPayload) -> Unit)? = null
 
     private var receiveJob: Job? = null
+
+    private val regionFileReceiver = RegionFileReceiver(
+        File("C:/temp/map_cache")
+    )
 
     /**
      * Запускает обработку входящих сообщений.
@@ -142,8 +153,22 @@ class DesktopProtocolSession(
 
                 when (val message = packet.message) {
                     is Response -> {
-                        pendingRequests[message.id]
-                            ?.complete(message)
+
+                        if (message.payload != null) {
+
+                            val chunk = runCatching {
+                                ProtocolJson.decodeFromJsonElement<RegionFileChunkPayload>(
+                                    message.payload!!
+                                )
+                            }.getOrNull()
+
+                            if (chunk != null) {
+                                regionFileReceiver.onChunk(chunk)
+                                continue
+                            }
+                        }
+
+                        pendingRequests[message.id]?.complete(message)
                     }
 
                     is RegionStateNotification -> {

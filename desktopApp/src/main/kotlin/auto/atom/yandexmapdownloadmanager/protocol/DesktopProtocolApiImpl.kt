@@ -258,4 +258,23 @@ class DesktopProtocolApiImpl(
             payload
         ).releaseTime
     }
+
+
+    override suspend fun getRegionFile(
+        regionId: Int
+    ) {
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.GET_REGION_FILE,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "GET_REGION_FILE failed."
+        }
+    }
 }

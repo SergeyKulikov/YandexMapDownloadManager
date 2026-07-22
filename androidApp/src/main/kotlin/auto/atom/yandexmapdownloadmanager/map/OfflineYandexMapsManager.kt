@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
@@ -181,6 +182,8 @@ class OfflineYandexMapsManager {
         onLoaded: (List<Region>) -> Unit
     ) {
 
+        logCachePath()
+
         onRegionsLoaded = onLoaded
 
         scope.launch {
@@ -194,6 +197,7 @@ class OfflineYandexMapsManager {
 
             onLoaded(regions)
         }
+
     }
 
     /**
@@ -315,4 +319,28 @@ class OfflineYandexMapsManager {
      */
     fun mayBeOutOfAvailableSpace(regionId: Int): Boolean =
         offlineCacheManager.mayBeOutOfAvailableSpace(regionId)
+
+
+    fun logCachePath() {
+        scope.launch {
+            offlineCacheManager.requestPath { path ->
+
+                android.util.Log.d(
+                    "MAP_CACHE",
+                    "Offline cache path = $path"
+                )
+            }
+        }
+    }
+
+    suspend fun getCachePath(): String =
+        suspendCancellableCoroutine { continuation ->
+
+            offlineCacheManager.requestPath { path ->
+
+                continuation.resume(path) {
+                    // ничего освобождать не нужно
+                }
+            }
+        }
 }

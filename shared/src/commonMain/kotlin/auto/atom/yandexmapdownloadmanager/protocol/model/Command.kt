@@ -53,7 +53,7 @@ enum class Command {
     GET_REGION_STATE,
     GET_DOWNLOADED_RELEASE_TIME,
 
-    DOWNLOAD_FILE,
+    GET_REGION_FILE,
 
     UPLOAD_FILE,
 

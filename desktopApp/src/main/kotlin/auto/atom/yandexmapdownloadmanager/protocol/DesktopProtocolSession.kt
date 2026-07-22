@@ -1,17 +1,17 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
-import auto.atom.yandexmapdownloadmanager.model.FileTransferState
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressNotification
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.model.RegionFileChunkPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileDataPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
-import auto.atom.yandexmapdownloadmanager.protocol.model.Status
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.coroutines.CancellationException
@@ -24,7 +24,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -47,8 +46,7 @@ class DesktopProtocolSession(
     /**
      * Ожидающие ответы.
      */
-    private val pendingRequests =
-        ConcurrentHashMap<String, CompletableDeferred<Response>>()
+    private val pendingRequests = ConcurrentHashMap<String, CompletableDeferred<Response>>()
 
     /**
      * Колбэки прогресса.
@@ -58,6 +56,7 @@ class DesktopProtocolSession(
     private var onRegionStateChanged: ((RegionStatePayload) -> Unit)? = null
 
     private var onRegionProgressChanged: ((RegionProgressPayload) -> Unit)? = null
+    private var onFileCopyProgressChanged: ((FileCopyProgressPayload) -> Unit)? = null
 
     private var receiveJob: Job? = null
 
@@ -154,18 +153,18 @@ class DesktopProtocolSession(
                 when (val message = packet.message) {
                     is Response -> {
 
-                        if (message.payload != null) {
-
-                            val chunk = runCatching {
-                                ProtocolJson.decodeFromJsonElement<RegionFileChunkPayload>(
-                                    message.payload!!
-                                )
+                        val fileData = message.payload?.let {
+                            runCatching {
+                                ProtocolJson.decodeFromJsonElement<FileDataPayload>(it)
                             }.getOrNull()
+                        }
 
-                            if (chunk != null) {
-                                regionFileReceiver.onChunk(chunk)
-                                continue
-                            }
+                        if (fileData != null) {
+                            regionFileReceiver.onChunk(
+                                fileData,
+                                packet.isLastPart
+                            )
+                            continue
                         }
 
                         pendingRequests[message.id]?.complete(message)
@@ -183,6 +182,13 @@ class DesktopProtocolSession(
                             "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
                         )
                         handleRegionProgress(message.payload)
+                    }
+
+                    is FileCopyProgressNotification -> {
+                        println(
+                            "<<< FILE PROGRESS ${message.payload.regionId} ${message.payload.fileName} ${message.payload.progress}"
+                        )
+                        handleFileCopyProgress(message.payload)
                     }
 
                     is Request -> {
@@ -213,6 +219,13 @@ class DesktopProtocolSession(
     ) {
         println("<<< REGION PROGRESS ${payload.regionId} ${payload.progress}")
         onRegionProgressChanged?.invoke(payload)
+    }
+
+    private fun handleFileCopyProgress(
+        payload: FileCopyProgressPayload
+    ) {
+        println("<<< REGION PROGRESS ${payload.regionId} ${payload.progress}")
+        onFileCopyProgressChanged?.invoke(payload)
     }
 
     /**

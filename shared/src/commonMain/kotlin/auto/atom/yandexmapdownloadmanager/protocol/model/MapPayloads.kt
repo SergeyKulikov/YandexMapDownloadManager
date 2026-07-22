@@ -1,6 +1,5 @@
 package auto.atom.yandexmapdownloadmanager.protocol.model
 
-import auto.atom.yandexmapdownloadmanager.model.FileTransferState
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import kotlinx.serialization.Serializable
@@ -38,6 +37,13 @@ data class RegionProgressPayload(
 )
 
 @Serializable
+data class FileCopyProgressPayload(
+    val regionId: Int,
+    val fileName: String,
+    val progress: Float
+)
+
+@Serializable
 data class CachePathPayload(
     val path: String
 )
@@ -48,23 +54,14 @@ data class DownloadedReleaseTimePayload(
     val releaseTime: Long?
 )
 
-@Serializable
-data class RegionFilePayload(
-    val regionId: Int,
-    val fileName: String,
-    val size: Long,
-    val bytes: ByteArray
-)
 
 /**
  * Чанк файла региона.
  */
 @Serializable
-data class RegionFileChunkPayload(
+data class FileDataPayload(
     val regionId: Int,
     val fileName: String,
-    val state: FileTransferState,
     val offset: Long = 0L,
-    val totalSize: Long = 0L,
     val bytes: ByteArray = ByteArray(0)
 )

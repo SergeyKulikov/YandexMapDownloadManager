@@ -13,6 +13,7 @@ import auto.atom.yandexmapdownloadmanager.commands.ResumeRegionHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.map.toOfflineRegionState
 import auto.atom.yandexmapdownloadmanager.protocol.model.Command
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloRequest
 import auto.atom.yandexmapdownloadmanager.protocol.model.HelloResponse
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
@@ -82,32 +83,6 @@ class AndroidProtocolHandler(
         )
     )
 
-    suspend fun runOld() {
-
-        while (connection.isConnected.value) {
-
-            val packet = connection.receive() ?: break
-
-            when (val message = packet.message) {
-                is Request ->
-                    dispatcher.dispatch(message, connection)
-
-                is Response,
-                is RegionStateNotification,
-                is RegionProgressNotification -> {
-                    // Android не ожидает Response
-                    // Android не ожидает Progress
-                }
-
-                is HelloRequest, is HelloResponse -> {
-                    // HelloRequest/HelloResponse уже обработаны во время handshake()
-                }
-
-            }
-        }
-    }
-
-
     suspend fun run() {
         while (connection.isConnected.value) {
 
@@ -120,13 +95,8 @@ class AndroidProtocolHandler(
                     }
                 }
 
-                is Response,
-                is RegionStateNotification,
-                is RegionProgressNotification -> {
-                }
-
-                is HelloRequest,
-                is HelloResponse -> {
+                else -> {
+                    // Никаких других веток в Android не ждем
                 }
             }
         }

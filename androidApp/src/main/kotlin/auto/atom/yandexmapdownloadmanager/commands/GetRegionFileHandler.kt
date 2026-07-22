@@ -5,7 +5,7 @@ import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.model.FileTransferState
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
-import auto.atom.yandexmapdownloadmanager.protocol.model.RegionFileChunkPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileDataPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
@@ -16,6 +16,8 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 import java.io.FileInputStream
+import kotlin.Int
+import kotlin.String
 
 /**
  * Передает файл региона чанками.
@@ -60,16 +62,6 @@ class GetRegionFileHandler(
                     )
                 }
 
-            connection.sendAsync(
-                Packet(
-                    message = Response(
-                        id = request.id,
-                        command = request.command,
-                        status = Status.OK
-                    )
-                )
-            )
-
             Log.d(
                 "PROTO",
                 "Region ${payload.regionId} sent"
@@ -109,30 +101,12 @@ class GetRegionFileHandler(
 
         val totalSize = file.length()
 
-        connection.sendAsync(
-            Packet(
-                message = Response(
-                    id = request.id,
-                    command = request.command,
-                    status = Status.OK,
-                    payload = ProtocolJson.encodeToJsonElement(
-                        RegionFileChunkPayload(
-                            regionId = regionId,
-                            fileName = file.name,
-                            state = FileTransferState.START,
-                            totalSize = totalSize
-                        )
-                    )
-                )
-            )
-        )
-
-        val buffer = ByteArray(CHUNK_SIZE)
-        var offset = 0L
-
+        val currentBuffer = ByteArray(CHUNK_SIZE)
+        var currentOffset = 0L
+        var index = 0
         FileInputStream(file).use { input ->
             while (true) {
-                val read = input.read(buffer)
+                val read = input.read(currentBuffer)
                 if (read == -1) {
                     break
                 }
@@ -144,38 +118,22 @@ class GetRegionFileHandler(
                             command = request.command,
                             status = Status.OK,
                             payload = ProtocolJson.encodeToJsonElement(
-                                RegionFileChunkPayload(
+                                FileDataPayload(
                                     regionId = regionId,
                                     fileName = file.name,
-                                    state = FileTransferState.CHUNK,
-                                    offset = offset,
-                                    totalSize = totalSize,
-                                    bytes = buffer.copyOf(read)
+                                    offset = currentOffset,
+                                    bytes = currentBuffer.copyOf(read)
                                 )
                             )
-                        )
+                        ),
+                        fragmentIndex = index++,
+                        isLastPart = (currentOffset + read >= totalSize)
                     )
                 )
 
-                offset += read
+                currentOffset += read
             }
         }
 
-        connection.sendAsync(
-            Packet(
-                message = Response(
-                    id = request.id,
-                    command = request.command,
-                    status = Status.OK,
-                    payload = ProtocolJson.encodeToJsonElement(
-                        RegionFileChunkPayload(
-                            regionId = regionId,
-                            fileName = file.name,
-                            state = FileTransferState.END
-                        )
-                    )
-                )
-            )
-        )
     }
 }

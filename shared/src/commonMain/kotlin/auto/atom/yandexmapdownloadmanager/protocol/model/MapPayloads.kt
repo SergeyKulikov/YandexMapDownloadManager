@@ -35,3 +35,15 @@ data class RegionProgressPayload(
     val regionId: Int,
     val progress: Float
 )
+
+@Serializable
+data class CachePathPayload(
+    val path: String
+)
+
+@Serializable
+data class DownloadedReleaseTimePayload(
+    val regionId: Int,
+    val releaseTime: Long?
+)
+

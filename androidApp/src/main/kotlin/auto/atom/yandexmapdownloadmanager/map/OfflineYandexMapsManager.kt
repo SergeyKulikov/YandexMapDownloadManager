@@ -297,6 +297,19 @@ class OfflineYandexMapsManager {
     fun getDownloadedReleaseTime(regionId: Int): Long? =
         offlineCacheManager.getDownloadedReleaseTime(regionId)
 
+
+    fun requestCachePath(
+        onResult: (String) -> Unit
+    ) {
+        offlineCacheManager.requestPath(
+            object : OfflineCacheManager.PathGetterListener {
+                override fun onPathReceived(path: String) {
+                    onResult(path)
+                }
+            }
+        )
+    }
+
     /**
      * Возможно недостаточно свободного места.
      */

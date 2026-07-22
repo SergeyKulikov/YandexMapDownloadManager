@@ -1,8 +1,12 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
+import auto.atom.yandexmapdownloadmanager.protocol.model.CachePathPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Command
+import auto.atom.yandexmapdownloadmanager.protocol.model.DownloadedReleaseTimePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
+import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionsPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Status
@@ -94,7 +98,9 @@ class DesktopProtocolApiImpl(
         }
     }
 
-            /**
+
+
+    /**
      * Приостанавливает загрузку региона.
      */
     override suspend fun pauseRegion(regionId: Int) {
@@ -175,5 +181,81 @@ class DesktopProtocolApiImpl(
         check(response.status == Status.OK) {
             response.error ?: "DELETE_REGION failed."
         }
+    }
+
+    override suspend fun getPath(): String {
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.GET_PATH
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "GET_PATH failed."
+        }
+
+        val payload = requireNotNull(response.payload) {
+            "GET_PATH returned empty payload."
+        }
+
+        return ProtocolJson.decodeFromJsonElement<CachePathPayload>(
+            payload
+        ).path
+    }
+
+    override suspend fun getRegionState(
+        regionId: Int
+    ): OfflineRegionState {
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.GET_REGION_STATE,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "GET_REGION_STATE failed."
+        }
+
+        val payload = requireNotNull(response.payload) {
+            "GET_REGION_STATE returned empty payload."
+        }
+
+        return ProtocolJson.decodeFromJsonElement<RegionStatePayload>(
+            payload
+        ).state
+    }
+
+    override suspend fun getDownloadedReleaseTime(
+        regionId: Int
+    ): Long? {
+
+        val response = session.execute(
+            Request(
+                id = UUID.randomUUID().toString(),
+                command = Command.GET_DOWNLOADED_RELEASE_TIME,
+                payload = ProtocolJson.encodeToJsonElement(
+                    RegionPayload(regionId)
+                )
+            )
+        )
+
+        check(response.status == Status.OK) {
+            response.error ?: "GET_DOWNLOADED_RELEASE_TIME failed."
+        }
+
+        val payload = requireNotNull(response.payload) {
+            "GET_DOWNLOADED_RELEASE_TIME returned empty payload."
+        }
+
+        return ProtocolJson.decodeFromJsonElement<DownloadedReleaseTimePayload>(
+            payload
+        ).releaseTime
     }
 }

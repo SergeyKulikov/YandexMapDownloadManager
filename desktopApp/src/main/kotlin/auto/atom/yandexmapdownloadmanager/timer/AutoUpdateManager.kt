@@ -21,40 +21,98 @@ class AutoUpdateManager(
     private val assignments: StateFlow<RegionAssignments>,
     private val downloadStates: StateFlow<List<RegionDownloadState>>,
     private val onDownloadStarted: suspend (Int) -> Unit,
+    private val onDownloadCompleted: suspend (Int) -> Unit,
 ) {
 
-    private var job: Job? = null
+    private var schedulerJob: Job? = null
+    private var monitorJob: Job? = null
 
     /**
-     * Регионы, для которых уже отправлена команда на загрузку,
-     * но состояние еще не успело измениться.
+     * Регионы, загрузка которых сейчас выполняется.
      */
     private val startedDownloads = mutableSetOf<Int>()
 
     fun start() {
 
-        if (job != null) {
+        if (schedulerJob != null) {
             return
         }
 
-        job = scope.launch {
-
-            checkUpdates()
+        //
+        // Проверка расписания раз в минуту.
+        //
+        schedulerJob = scope.launch {
 
             while (isActive) {
+
+                checkSchedule()
+
                 delay(60_000)
-                checkUpdates()
+            }
+        }
+
+        //
+        // Контроль завершения загрузок.
+        //
+        monitorJob = scope.launch {
+
+            while (isActive) {
+
+                monitorDownloads()
+
+                delay(1000)
             }
         }
     }
 
     fun stop() {
-        job?.cancel()
-        job = null
+
+        schedulerJob?.cancel()
+        schedulerJob = null
+
+        monitorJob?.cancel()
+        monitorJob = null
+
         startedDownloads.clear()
     }
 
-    private suspend fun checkUpdates() {
+    private suspend fun monitorDownloads() {
+
+        if (startedDownloads.isEmpty()) {
+            return
+        }
+
+        val regionsById =
+            regions.value
+                .flatten()
+                .associateBy { it.id }
+
+        for (regionId in startedDownloads.toList()) {
+
+            val region =
+                regionsById[regionId] ?: continue
+
+            if (region.state == OfflineRegionState.COMPLETED) {
+
+                onDownloadCompleted(regionId)
+
+                startedDownloads.remove(regionId)
+
+                //
+                // Сразу ищем следующий регион.
+                //
+                checkSchedule()
+
+                return
+            }
+        }
+    }
+
+    private suspend fun checkSchedule() {
+
+        if (startedDownloads.isNotEmpty()) {
+            return
+        }
 
         val now = System.currentTimeMillis()
 
@@ -63,26 +121,7 @@ class AutoUpdateManager(
                 .flatten()
                 .associateBy { it.id }
 
-        // Убираем регионы, для которых загрузка уже началась
-        // или завершилась, чтобы их можно было проверять повторно.
-        startedDownloads.removeAll { regionId ->
-
-            when (regionsById[regionId]?.state) {
-
-                OfflineRegionState.DOWNLOADING,
-                OfflineRegionState.COMPLETED,
-                OfflineRegionState.OUTDATED,
-                OfflineRegionState.NEED_UPDATE -> true
-
-                else -> false
-            }
-        }
-
         for ((regionId, policyId) in assignments.value.assignments) {
-
-            if (regionId in startedDownloads) {
-                continue
-            }
 
             val policy =
                 policies.value.firstOrNull {
@@ -97,24 +136,21 @@ class AutoUpdateManager(
 
                 OfflineRegionState.DOWNLOADING,
                 OfflineRegionState.PAUSED,
-                OfflineRegionState.UNSUPPORTED -> continue
+                OfflineRegionState.UNSUPPORTED ->
+                    continue
 
                 else -> Unit
             }
 
-            val lastDownload =
-                downloadStates.value
-                    .firstOrNull {
-                        it.regionId == regionId
-                    }
-                    ?.lastSuccessfulDownloadMillis
-                    ?: 0L
+            val state =
+                downloadStates.value.firstOrNull {
+                    it.regionId == regionId
+                }
 
             val nextDownload =
-                lastDownload +
-                        policy.periodDays.inWholeMilliseconds
+                state?.nextPlannedDownloadMillis ?: 0L
 
-            if (lastDownload == 0L || nextDownload <= now) {
+            if (nextDownload == 0L || nextDownload <= now) {
 
                 startedDownloads += regionId
 

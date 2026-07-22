@@ -118,10 +118,35 @@ class MainViewModel {
         assignments = regionAssignments,
         downloadStates = downloadStates,
         onDownloadStarted = { regionId ->
+
+            val now = System.currentTimeMillis()
+
+            val currentState = regionDownloadRepository.getState(regionId)
+
             regionDownloadRepository.updateState(
-                RegionDownloadState(
-                    regionId = regionId,
-                    lastSuccessfulDownloadMillis = System.currentTimeMillis()
+                (currentState ?: RegionDownloadState(
+                    regionId = regionId
+                )).copy(
+                    nextPlannedDownloadMillis = now
+                )
+            )
+
+            reloadDownloadStates()
+        },
+        onDownloadCompleted = { regionId ->
+
+            val now = System.currentTimeMillis()
+
+            val policyId = regionAssignments.value.assignments[regionId] ?: return@AutoUpdateManager
+            val policy = policies.value.firstOrNull { it.id == policyId } ?: return@AutoUpdateManager
+
+            val currentState =
+                regionDownloadRepository.getState(regionId)
+
+            regionDownloadRepository.updateState(
+                (currentState ?: RegionDownloadState(regionId)).copy(
+                    lastSuccessfulDownloadMillis = now,
+                    nextPlannedDownloadMillis = now + policy.periodDays.inWholeMilliseconds
                 )
             )
 
@@ -699,6 +724,7 @@ class MainViewModel {
                     .resumeRegion(region.id)
             }
 
+
             OfflineRegionState.COMPLETED -> {
                 requireNotNull(protocolApi)
                     .deleteRegion(region.id)
@@ -756,5 +782,23 @@ class MainViewModel {
                 children = newChildren
             )
         }
+    }
+
+    fun updateNextPlannedDownloadDate(
+        regionId: Int,
+        nextPlannedDownloadMillis: Long
+    ) = scope.launch {
+
+        val currentState =
+            regionDownloadRepository.getState(regionId)
+                ?: RegionDownloadState(regionId)
+
+        regionDownloadRepository.updateState(
+            currentState.copy(
+                nextPlannedDownloadMillis = nextPlannedDownloadMillis
+            )
+        )
+
+        reloadDownloadStates()
     }
 }

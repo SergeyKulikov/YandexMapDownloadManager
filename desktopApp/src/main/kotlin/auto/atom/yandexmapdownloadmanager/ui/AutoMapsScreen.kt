@@ -7,18 +7,27 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import auto.atom.yandexmapdownloadmanager.flatten
+import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
 import auto.atom.yandexmapdownloadmanager.model.UpdateReason
+import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
 
 private sealed interface TimerListItem {
     data class Header(
@@ -32,10 +41,14 @@ private sealed interface TimerListItem {
     ) : TimerListItem
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoMapsScreen(
     viewModel: MainViewModel
 ) {
+
+    var editingRegion by remember { mutableStateOf<OfflineRegion?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val regions by viewModel.regions.collectAsState()
     val policies by viewModel.policies.collectAsState()
@@ -154,10 +167,72 @@ fun AutoMapsScreen(
                         region = item.task.region,
                         task = item.task,
                         policy = item.policy,
-                        downloadState = item.downloadState
+                        downloadState = item.downloadState,
+                        onEditPlannedDate = { region ->
+                            // открыть диалог выбора даты
+                            editingRegion = region
+                            showDatePicker = true
+                        }
                     )
                 }
             }
+        }
+    }
+
+    if (showDatePicker && editingRegion != null) {
+
+        val currentState =
+            downloadStates.firstOrNull {
+                it.regionId == editingRegion!!.id
+            }
+
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis =
+                currentState?.nextPlannedDownloadMillis
+                    ?: System.currentTimeMillis()
+        )
+
+        DatePickerDialog(
+            onDismissRequest = {
+                showDatePicker = false
+                editingRegion = null
+            },
+            confirmButton = {
+
+                TextButton(
+                    onClick = {
+
+                        datePickerState.selectedDateMillis?.let { selectedDateMillis ->
+
+                            viewModel.updateNextPlannedDownloadDate(
+                                regionId = editingRegion!!.id,
+                                nextPlannedDownloadMillis = selectedDateMillis
+                            )
+                        }
+
+                        showDatePicker = false
+                        editingRegion = null
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                        editingRegion = null
+                    }
+                ) {
+                    Text("Отмена")
+                }
+            }
+        ) {
+
+            DatePicker(
+                state = datePickerState
+            )
         }
     }
 }

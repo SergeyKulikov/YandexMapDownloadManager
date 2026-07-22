@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.chevron_right
+import atomyandexmapmanager.shared.generated.resources.edit
 import atomyandexmapmanager.shared.generated.resources.system_update
 import auto.atom.yandexmapdownloadmanager.formatDate
 import auto.atom.yandexmapdownloadmanager.formatShortDate
@@ -54,7 +56,8 @@ fun RegionUpdateItem(
     region: OfflineRegion,
     task: RegionUpdateTask,
     policy: UpdatePolicy,
-    downloadState: RegionDownloadState?
+    downloadState: RegionDownloadState?,
+    onEditPlannedDate: (OfflineRegion) -> Unit
 ) {
 
     val lastDownloadMillis =
@@ -68,15 +71,11 @@ fun RegionUpdateItem(
         }
 
     val nextDownloadMillis =
-        if (lastDownloadMillis == 0L) {
-            0L
-        } else {
-            lastDownloadMillis + policy.periodDays.inWholeMilliseconds
-        }
+        downloadState?.nextPlannedDownloadMillis ?: 0L
 
     val status =
         when {
-            lastDownloadMillis == 0L ->
+            nextDownloadMillis == 0L ->
                 ScheduledUpdateStatus.NOW
 
             nextDownloadMillis <= System.currentTimeMillis() ->
@@ -101,7 +100,7 @@ fun RegionUpdateItem(
     val scheduleValue =
         when (status) {
             ScheduledUpdateStatus.NOW ->
-                "сейчас"
+                "не запланировано"
 
             ScheduledUpdateStatus.OVERDUE ->
                 "с ${formatShortDate(nextDownloadMillis)}"
@@ -248,10 +247,45 @@ fun RegionUpdateItem(
                             }
                         }
                     ) {
-                        InfoRow(
-                            title = scheduleTitle,
-                            value = scheduleValue
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Text(
+                                text = scheduleTitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                Text(
+                                    text = scheduleValue,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                if (status == ScheduledUpdateStatus.PLANNED) {
+
+                                    IconButton(
+                                        onClick = {
+                                            onEditPlannedDate(region)
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.edit),
+                                            contentDescription = "Изменить дату",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 

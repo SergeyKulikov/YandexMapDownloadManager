@@ -134,7 +134,22 @@ enum class OfflineRussiaRegion(
 
     ZABAIKALSKY_KRAI(21949, "Забайкальский край"),
 
-    REPUBLIC_OF_CRIMEA(977, "Республика Крым");
+    REPUBLIC_OF_CRIMEA(977, "Республика Крым"),
+
+    BALASHIKHA(10716, "Балашиха"),
+
+    ARMAVIR(10987, "Армавир"),
+
+    ARZAMAS(11080, "Арзамас"),
+
+    ANGARSK(11256, "Ангарск"),
+
+    ARTYOM(11406, "Артём"),
+
+    ANADYR(11458, "Анадырь"),
+    // LUGANSKAYA_OBLAST(21015, "Луганская область"),
+    // LUGANSK(222, "Луганск"),
+    ;
 
     companion object {
         fun fromId(id: Int): OfflineRussiaRegion? =

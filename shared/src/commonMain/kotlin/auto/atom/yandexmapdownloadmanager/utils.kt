@@ -56,6 +56,8 @@ fun List<OfflineRegion>.flatten(): List<OfflineRegion> {
         result.addAll(item.children.flatten())
     }
 
+    // println("region tree: ${this.size} -> flatten: ${result.size}")
+
     return result
 }
 

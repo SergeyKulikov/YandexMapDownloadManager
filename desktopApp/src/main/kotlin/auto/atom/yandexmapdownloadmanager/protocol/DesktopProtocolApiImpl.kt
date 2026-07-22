@@ -41,9 +41,35 @@ class DesktopProtocolApiImpl(
             "GET_REGIONS returned empty payload."
         }
 
-        return ProtocolJson.decodeFromJsonElement<RegionsPayload>(
+        val result = ProtocolJson.decodeFromJsonElement<RegionsPayload>(
             payload
-        ).regions
+        ).regions.toMutableList()
+
+        // Добавляем Луганскую область, если ее нет
+        if (result.none { it.id == 21015 }) {
+            result += OfflineRegion(
+                id = 21015,
+                parentId = 225,
+                name = "Луганская область",
+                country = "Россия",
+                releaseTime = 0L,
+                size = 10L,
+                children = mutableListOf(
+                    // Добавляем Луганск
+                    OfflineRegion(
+                        id = 222,
+                        parentId = 21015,
+                        name = "Луганск",
+                        country = "Россия",
+                        releaseTime = 0L,
+                        size = 10L
+                    )
+                )
+
+            )
+        }
+
+        return result
     }
 
     /**

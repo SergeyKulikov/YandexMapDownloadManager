@@ -85,29 +85,23 @@ class MainViewModel {
      */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
+    val path = "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config"
+
     private val updatePolicyRepository = JsonUpdatePolicyRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = (
-                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/update_policies.json"
-                ).toPath()
+        file = ("$path/update_policies.json").toPath()
     )
     private val regionAssignmentRepository = JsonRegionAssignmentRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = (
-                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/region_assignments.json"
-                ).toPath()
+        file = ("$path/region_assignments.json").toPath()
     )
 
     private val _regionAssignments = MutableStateFlow(RegionAssignments())
     val regionAssignments = _regionAssignments.asStateFlow()
 
-
-
     private val regionDownloadRepository = JsonRegionDownloadRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = (
-                "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config/region_download_states.json"
-                ).toPath()
+        file = ("$path/region_download_states.json").toPath()
     )
 
     private val _downloadStates =
@@ -152,6 +146,14 @@ class MainViewModel {
                 val flatRegions = regions.flatten()
                 val assignmentsMap = assignments.assignments
 
+                /*
+                flatRegions.forEach {
+                    if (it.id in setOf(11458, 10716, 10842, 10987, 11406, 11070, 11080, 11256, 11375)) {
+                        println("${it.id} -> ${assignmentsMap[it.id]}")
+                    }
+                }
+                */
+
                 val result =
                     if (selectedPolicyId == null) {
                         flatRegions.filter {
@@ -168,12 +170,24 @@ class MainViewModel {
                 println("regions=${flatRegions.size}")
                 println("result=${result.size}")
 
+                val flatIds = flatRegions.map { it.id }.toSet()
+                val resultIds = result.map { it.id }.toSet()
+
+                val onlyInFlat = flatRegions.filter { it.id !in resultIds }
+                val onlyInResult = result.filter { it.id !in flatIds }
+
+                println("onlyInFlat = ${onlyInFlat.map{ it.id}.toString()}")
+                println("onlyInResult = ${onlyInResult.toString()}")
+
+
                 result
 
             }.collect { filtered ->
                 _filteredRegions.value = filtered
             }
         }
+
+        println("PATH == $path")
     }
     /**
      * Запускает сервер.

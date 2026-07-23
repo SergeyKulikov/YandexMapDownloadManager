@@ -97,12 +97,12 @@ internal class KtorConnection(
                 message
             )
 
-            println(">>> SEND ${message::class.simpleName}")
-            println(json)
+            // println(">>> SEND ${message::class.simpleName}")
+            // println(json)
 
             frameIO.writeFrame(json.encodeToByteArray())
 
-            println(">>> WRITE OK")
+            // println(">>> WRITE OK")
 
             true
 
@@ -147,8 +147,8 @@ internal class KtorConnection(
 
             val payload = frameIO.readFrame()
 
-            println("<<< RECV")
-            println(payload.decodeToString())
+            // println("<<< RECV")
+            // println(payload.decodeToString())
 
             ProtocolJson.decodeFromString(
                 Packet.serializer(),
@@ -159,7 +159,7 @@ internal class KtorConnection(
             throw ee
         } catch (e: java.io.EOFException) {
 
-            println("<<< Connection closed")
+            // println("<<< Connection closed")
 
             _isConnected.value = false
             sendChannel.close()
@@ -171,7 +171,7 @@ internal class KtorConnection(
 
         } catch (e: Exception) {
 
-            println("<<< RECEIVE FAILED")
+            // println("<<< RECEIVE FAILED")
             e.printStackTrace()
 
             _isConnected.value = false

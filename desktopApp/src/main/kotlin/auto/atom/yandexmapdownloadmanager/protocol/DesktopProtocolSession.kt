@@ -12,6 +12,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
+import auto.atom.yandexmapdownloadmanager.protocol.model.Status
 import auto.atom.yandexmapdownloadmanager.transport.Connection
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.coroutines.CancellationException
@@ -37,9 +38,12 @@ import java.util.concurrent.ConcurrentHashMap
  * - сопоставление Response ожидающему запросу.
  */
 class DesktopProtocolSession(
-    private val connection: Connection
+    private val connection: Connection,
+    private val root: String
 ) {
 
+    private var currentFileStartedAt = 0L
+    private var currentFileName: String? = null
     private val scope =
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -61,7 +65,7 @@ class DesktopProtocolSession(
     private var receiveJob: Job? = null
 
     private val regionFileReceiver = RegionFileReceiver(
-        File("C:/temp/map_cache")
+        File(root)
     )
 
     /**
@@ -114,6 +118,35 @@ class DesktopProtocolSession(
     /**
      * Отправляет запрос и ожидает ответ.
      */
+    suspend fun executeOld(
+        request: Request
+    ): Response {
+
+        println("EXECUTE ${request.command}")
+
+        val deferred = CompletableDeferred<Response>()
+
+
+        pendingRequests[request.id] = deferred
+
+        try {
+
+            connection.send(
+                Packet(
+                    message = request
+                )
+            )
+
+            println("REQUEST QUEUED ${request.command}")
+
+            return deferred.await()
+
+        } finally {
+
+            pendingRequests.remove(request.id)
+        }
+    }
+
     suspend fun execute(
         request: Request
     ): Response {
@@ -134,7 +167,15 @@ class DesktopProtocolSession(
 
             println("REQUEST QUEUED ${request.command}")
 
-            return deferred.await()
+            val response = deferred.await()
+
+            if (response.status == Status.ERROR) {
+                throw DesktopProtocolException(
+                    response.error ?: "Unknown protocol error"
+                )
+            }
+
+            return response
 
         } finally {
 
@@ -159,11 +200,44 @@ class DesktopProtocolSession(
                             }.getOrNull()
                         }
 
+                        /*
                         if (fileData != null) {
                             regionFileReceiver.onChunk(
                                 fileData,
                                 packet.isLastPart
                             )
+                            continue
+                        }
+                        */
+
+                        if (fileData != null) {
+
+                            if (currentFileName != fileData.fileName) {
+                                currentFileName = fileData.fileName
+                                currentFileStartedAt = System.nanoTime()
+
+                                println(">>> START ${fileData.fileName}")
+                            }
+
+                            regionFileReceiver.onChunk(
+                                fileData,
+                                packet.isLastPart
+                            )
+
+                            if (packet.isLastPart) {
+
+                                val elapsedMs =
+                                    (System.nanoTime() - currentFileStartedAt) / 1_000_000.0
+
+                                println(
+                                    ">>> FINISH ${fileData.fileName} " +
+                                            "(${String.format("%.2f", elapsedMs)} ms)"
+                                )
+
+                                currentFileName = null
+                                currentFileStartedAt = 0L
+                            }
+
                             continue
                         }
 

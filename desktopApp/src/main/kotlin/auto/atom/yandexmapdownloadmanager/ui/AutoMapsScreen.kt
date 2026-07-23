@@ -28,6 +28,7 @@ import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
 import auto.atom.yandexmapdownloadmanager.model.UpdateReason
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
+import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
 
 private sealed interface TimerListItem {
     data class Header(
@@ -36,8 +37,8 @@ private sealed interface TimerListItem {
 
     data class Region(
         val task: RegionUpdateTask,
-        val policy: auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy,
-        val downloadState: auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState?
+        val policy: UpdatePolicy,
+        val downloadState: RegionDownloadState?
     ) : TimerListItem
 }
 
@@ -66,21 +67,9 @@ fun AutoMapsScreen(
 
         val timerItems =
             assignments.assignments.mapNotNull { (regionId, policyId) ->
-
-                val region =
-                    flatRegions.firstOrNull {
-                        it.id == regionId
-                    } ?: return@mapNotNull null
-
-                val policy =
-                    policies.firstOrNull {
-                        it.id == policyId
-                    } ?: return@mapNotNull null
-
-                val downloadState =
-                    downloadStates.firstOrNull {
-                        it.regionId == regionId
-                    }
+                val region = flatRegions.firstOrNull { it.id == regionId } ?: return@mapNotNull null
+                val policy = policies.firstOrNull { it.id == policyId } ?: return@mapNotNull null
+                val downloadState = downloadStates.firstOrNull { it.regionId == regionId }
 
                 val reason =
                     if (region.state == OfflineRegionState.AVAILABLE)
@@ -99,21 +88,12 @@ fun AutoMapsScreen(
             }
 
         buildList {
-
             timerItems
-                .sortedBy {
-                    it.task.region.name.lowercase()
-                }
-                .groupBy {
-                    it.task.region.name.first().uppercaseChar()
-                }
+                .sortedBy { it.task.region.name.lowercase() }
+                .groupBy { it.task.region.name.first().uppercaseChar() }
                 .toSortedMap()
                 .forEach { (letter, items) ->
-
-                    add(
-                        TimerListItem.Header(letter)
-                    )
-
+                    add(TimerListItem.Header(letter))
                     addAll(items)
                 }
         }
@@ -129,28 +109,20 @@ fun AutoMapsScreen(
             items = listItems,
             key = {
                 when (it) {
-                    is TimerListItem.Header ->
-                        "header_${it.letter}"
-
-                    is TimerListItem.Region ->
-                        it.task.region.id
+                    is TimerListItem.Header -> "header_${it.letter}"
+                    is TimerListItem.Region -> it.task.region.id
                 }
             },
             span = {
                 when (it) {
-                    is TimerListItem.Header ->
-                        GridItemSpan(maxLineSpan)
-
-                    is TimerListItem.Region ->
-                        GridItemSpan(1)
+                    is TimerListItem.Header -> GridItemSpan(maxLineSpan)
+                    is TimerListItem.Region -> GridItemSpan(1)
                 }
             }
         ) { item ->
 
             when (item) {
-
                 is TimerListItem.Header -> {
-
                     Text(
                         text = item.letter.toString(),
                         style = MaterialTheme.typography.headlineSmall,
@@ -162,7 +134,6 @@ fun AutoMapsScreen(
                 }
 
                 is TimerListItem.Region -> {
-
                     RegionUpdateItem(
                         region = item.task.region,
                         task = item.task,
@@ -172,6 +143,9 @@ fun AutoMapsScreen(
                             // открыть диалог выбора даты
                             editingRegion = region
                             showDatePicker = true
+                        },
+                        onCopyRegion = { region ->
+                            viewModel.copyRegion(region)
                         }
                     )
                 }
@@ -180,11 +154,7 @@ fun AutoMapsScreen(
     }
 
     if (showDatePicker && editingRegion != null) {
-
-        val currentState =
-            downloadStates.firstOrNull {
-                it.regionId == editingRegion!!.id
-            }
+        val currentState = downloadStates.firstOrNull { it.regionId == editingRegion!!.id }
 
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis =
@@ -201,9 +171,7 @@ fun AutoMapsScreen(
 
                 TextButton(
                     onClick = {
-
                         datePickerState.selectedDateMillis?.let { selectedDateMillis ->
-
                             viewModel.updateNextPlannedDownloadDate(
                                 regionId = editingRegion!!.id,
                                 nextPlannedDownloadMillis = selectedDateMillis
@@ -218,7 +186,6 @@ fun AutoMapsScreen(
                 }
             },
             dismissButton = {
-
                 TextButton(
                     onClick = {
                         showDatePicker = false
@@ -229,7 +196,6 @@ fun AutoMapsScreen(
                 }
             }
         ) {
-
             DatePicker(
                 state = datePickerState
             )

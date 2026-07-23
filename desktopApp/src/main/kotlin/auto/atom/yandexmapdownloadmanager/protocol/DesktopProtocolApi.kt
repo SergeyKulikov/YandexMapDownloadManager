@@ -13,5 +13,5 @@ interface DesktopProtocolApi {
     suspend fun getPath(): String
     suspend fun getRegionState(regionId: Int): OfflineRegionState
     suspend fun getDownloadedReleaseTime(regionId: Int): Long?
-    suspend fun getRegionFile(regionId: Int)
+    suspend fun getRegionMapFiles(regionId: Int)
 }

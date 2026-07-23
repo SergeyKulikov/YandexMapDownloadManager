@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.chevron_right
 import atomyandexmapmanager.shared.generated.resources.edit
+import atomyandexmapmanager.shared.generated.resources.file_copy
 import atomyandexmapmanager.shared.generated.resources.system_update
 import auto.atom.yandexmapdownloadmanager.formatDate
 import auto.atom.yandexmapdownloadmanager.formatShortDate
@@ -57,7 +58,8 @@ fun RegionUpdateItem(
     task: RegionUpdateTask,
     policy: UpdatePolicy,
     downloadState: RegionDownloadState?,
-    onEditPlannedDate: (OfflineRegion) -> Unit
+    onEditPlannedDate: (OfflineRegion) -> Unit,
+    onCopyRegion: (OfflineRegion) -> Unit
 ) {
 
     val lastDownloadMillis =
@@ -189,13 +191,29 @@ fun RegionUpdateItem(
                     .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val visible =
+                    region.state == OfflineRegionState.COMPLETED ||
+                            region.state == OfflineRegionState.OUTDATED
 
-                Icon(
-                    painter = painterResource(Res.drawable.system_update),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    IconButton(
+                        onClick = {
+                            onCopyRegion(region)
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.file_copy),
+                            contentDescription = "Скопировать регион",
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
 
                 Spacer(
                     modifier = Modifier.size(20.dp)

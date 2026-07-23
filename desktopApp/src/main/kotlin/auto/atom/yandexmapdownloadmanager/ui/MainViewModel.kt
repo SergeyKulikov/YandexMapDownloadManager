@@ -5,6 +5,7 @@ import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
+import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolException
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
@@ -32,9 +33,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.io.File
 import java.util.UUID
-import kotlin.collections.containsKey
-import kotlin.collections.get
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -85,15 +87,19 @@ class MainViewModel {
      */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-    val path = "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config"
+    val pathConfig = "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config"
+    val pathMap = "C:/temp/map_cache"
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
 
     private val updatePolicyRepository = JsonUpdatePolicyRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = ("$path/update_policies.json").toPath()
+        file = ("$pathConfig/update_policies.json").toPath()
     )
     private val regionAssignmentRepository = JsonRegionAssignmentRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = ("$path/region_assignments.json").toPath()
+        file = ("$pathConfig/region_assignments.json").toPath()
     )
 
     private val _regionAssignments = MutableStateFlow(RegionAssignments())
@@ -101,7 +107,7 @@ class MainViewModel {
 
     private val regionDownloadRepository = JsonRegionDownloadRepository(
         fileSystem = FileSystem.SYSTEM,
-        file = ("$path/region_download_states.json").toPath()
+        file = ("$pathConfig/region_download_states.json").toPath()
     )
 
     private val _downloadStates =
@@ -138,7 +144,8 @@ class MainViewModel {
             val now = System.currentTimeMillis()
 
             val policyId = regionAssignments.value.assignments[regionId] ?: return@AutoUpdateManager
-            val policy = policies.value.firstOrNull { it.id == policyId } ?: return@AutoUpdateManager
+            val policy =
+                policies.value.firstOrNull { it.id == policyId } ?: return@AutoUpdateManager
 
             val currentState =
                 regionDownloadRepository.getState(regionId)
@@ -201,7 +208,7 @@ class MainViewModel {
                 val onlyInFlat = flatRegions.filter { it.id !in resultIds }
                 val onlyInResult = result.filter { it.id !in flatIds }
 
-                println("onlyInFlat = ${onlyInFlat.map{ it.id}.toString()}")
+                println("onlyInFlat = ${onlyInFlat.map { it.id }.toString()}")
                 println("onlyInResult = ${onlyInResult.toString()}")
 
 
@@ -212,8 +219,9 @@ class MainViewModel {
             }
         }
 
-        println("PATH == $path")
+        println("PATH == $pathConfig")
     }
+
     /**
      * Запускает сервер.
      */
@@ -248,7 +256,7 @@ class MainViewModel {
 
                     connection = server.waitForConnection()
 
-                    protocolSession = DesktopProtocolSession(connection!!)
+                    protocolSession = DesktopProtocolSession(connection!!,pathMap)
                     protocolSession!!.start()
 
                     protocolSession!!.setOnRegionStateChangedListener(::updateRegionState)
@@ -337,6 +345,7 @@ class MainViewModel {
             }
         }
     }
+
     private suspend fun getRegionsFromClient() {
         _regions.value = requireNotNull(protocolApi).getRegions()
 
@@ -800,5 +809,34 @@ class MainViewModel {
         )
 
         reloadDownloadStates()
+    }
+
+    fun copyRegion(region: OfflineRegion) {
+        scope.launch {
+            try {
+                requireNotNull(protocolApi)
+                    .getRegionMapFiles(region.id)
+
+                Toolkit.getDefaultToolkit()
+                    .systemClipboard
+                    .setContents(
+                        StringSelection(pathConfig),
+                        null
+                    )
+
+            } catch (e: DesktopProtocolException) {
+                showError(message = e.message ?: "Неизвестная ошибка")
+            } catch (e: Exception) {
+                showError(message = e.message ?: "Неизвестная ошибка")
+            }
+        }
+    }
+
+    fun showError(message: String) {
+        _errorMessage.value = message
+    }
+
+    fun dismissError() {
+        _errorMessage.value = null
     }
 }

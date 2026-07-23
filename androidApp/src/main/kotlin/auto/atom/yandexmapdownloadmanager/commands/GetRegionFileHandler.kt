@@ -27,7 +27,7 @@ class GetRegionFileHandler(
 ) : CommandHandler {
 
     companion object {
-        private const val CHUNK_SIZE = 256 * 1024
+        private const val CHUNK_SIZE = 1024 * 1024
     }
 
     override suspend fun execute(
@@ -39,7 +39,7 @@ class GetRegionFileHandler(
         )
 
         try {
-            val cachePath = offlineYandexMapsManager.getCachePath()
+            val cachePath = offlineYandexMapsManager.getCachePath()+"/offline_caches"
 
             val regionDir = File(
                 cachePath,

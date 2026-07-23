@@ -260,13 +260,14 @@ class DesktopProtocolApiImpl(
     }
 
 
-    override suspend fun getRegionFile(
+    override suspend fun getRegionMapFiles(
         regionId: Int
     ) {
         val response = session.execute(
             Request(
                 id = UUID.randomUUID().toString(),
                 command = Command.GET_REGION_FILE,
+
                 payload = ProtocolJson.encodeToJsonElement(
                     RegionPayload(regionId)
                 )

@@ -37,7 +37,6 @@ import atomyandexmapmanager.shared.generated.resources.Res
 import atomyandexmapmanager.shared.generated.resources.chevron_right
 import atomyandexmapmanager.shared.generated.resources.edit
 import atomyandexmapmanager.shared.generated.resources.file_copy
-import atomyandexmapmanager.shared.generated.resources.system_update
 import auto.atom.yandexmapdownloadmanager.formatDate
 import auto.atom.yandexmapdownloadmanager.formatShortDate
 import auto.atom.yandexmapdownloadmanager.localizedName
@@ -59,7 +58,7 @@ fun RegionUpdateItem(
     policy: UpdatePolicy,
     downloadState: RegionDownloadState?,
     onEditPlannedDate: (OfflineRegion) -> Unit,
-    onCopyRegion: (OfflineRegion) -> Unit
+    onCopyRegionPath: (OfflineRegion) -> Unit
 ) {
 
     val lastDownloadMillis =
@@ -131,21 +130,25 @@ fun RegionUpdateItem(
         mutableStateOf(false)
     }
 
-    LaunchedEffect(region.state) {
+    LaunchedEffect(region.state, region.fileCopyProgress) {
 
-        when (region.state) {
+        val copyProgress = region.fileCopyProgress
+        val isCopying = (copyProgress?.progress ?: 1f) < 1f
 
-            OfflineRegionState.DOWNLOADING,
-            OfflineRegionState.PAUSED -> {
+        when {
+            isCopying -> {
                 showProgress = true
                 progressWasVisible = true
             }
 
-            OfflineRegionState.COMPLETED -> {
-                if (progressWasVisible) {
-                    delay(700)
-                }
+            region.state == OfflineRegionState.DOWNLOADING ||
+                    region.state == OfflineRegionState.PAUSED -> {
+                showProgress = true
+                progressWasVisible = true
+            }
 
+            progressWasVisible -> {
+                delay(700)
                 showProgress = false
                 progressWasVisible = false
             }
@@ -202,7 +205,7 @@ fun RegionUpdateItem(
                 ) {
                     IconButton(
                         onClick = {
-                            onCopyRegion(region)
+                            onCopyRegionPath(region)
                         },
                         modifier = Modifier.size(40.dp)
                     ) {
@@ -321,8 +324,14 @@ fun RegionUpdateItem(
                 exit = fadeOut() + shrinkVertically()
             ) {
 
-                val progress = region.downloadProgress ?: 0f
+                val progress =
+                    region.fileCopyProgress?.progress
+                        ?: region.downloadProgress
+                        ?: 0f
+
                 val percent = (progress * 10000).roundToInt() / 100f
+                val copyProgress = region.fileCopyProgress
+                val isCopying = (copyProgress?.progress ?: 1f) < 1f
 
                 Column(
                     modifier = Modifier.padding(
@@ -333,7 +342,10 @@ fun RegionUpdateItem(
                 ) {
 
                     Text(
-                        text = "Загрузка...",
+                        text = if (isCopying)
+                            "Копирование файлов карты..."
+                        else
+                            "Загрузка...",
                         style = MaterialTheme.typography.bodySmall
                     )
 

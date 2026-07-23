@@ -2,6 +2,7 @@ package auto.atom.yandexmapdownloadmanager
 
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
+import auto.atom.yandexmapdownloadmanager.model.OfflineRussiaRegion
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,6 +60,13 @@ fun List<OfflineRegion>.flatten(): List<OfflineRegion> {
     // println("region tree: ${this.size} -> flatten: ${result.size}")
 
     return result
+}
+
+fun regionFolderName(regionId: Int): String {
+    return OfflineRussiaRegion.fromId(regionId)
+        ?.name
+        ?.lowercase()
+        ?: "unknown"
 }
 
 

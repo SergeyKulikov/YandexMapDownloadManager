@@ -159,6 +159,9 @@ class MainViewModel {
             )
 
             reloadDownloadStates()
+        },
+        onCopyRegion = { regionId ->
+            copyRegion(regionId)
         }
     )
 
@@ -837,6 +840,15 @@ class MainViewModel {
         )
 
         reloadDownloadStates()
+    }
+
+    fun copyRegion(regionId: Int) {
+        val region = regions.value
+            .flatten()
+            .firstOrNull { it.id == regionId }
+            ?: return
+
+        copyRegion(region)
     }
 
     fun copyRegion(region: OfflineRegion) {

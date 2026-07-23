@@ -152,7 +152,15 @@ enum class OfflineRussiaRegion(
     ;
 
     companion object {
+        private val byId = entries.associateBy { it.id }
+
         fun fromId(id: Int): OfflineRussiaRegion? =
-            entries.find { it.id == id }
+            byId[id]
+
+        fun folderName(id: Int): String =
+            byId[id]
+                ?.name
+                ?.lowercase()
+                ?: "unknown"
     }
 }

@@ -22,6 +22,7 @@ class AutoUpdateManager(
     private val downloadStates: StateFlow<List<RegionDownloadState>>,
     private val onDownloadStarted: suspend (Int) -> Unit,
     private val onDownloadCompleted: suspend (Int) -> Unit,
+    private val onCopyRegion: suspend (Int) -> Unit,
 ) {
 
     private var schedulerJob: Job? = null
@@ -89,8 +90,7 @@ class AutoUpdateManager(
 
         for (regionId in startedDownloads.toList()) {
 
-            val region =
-                regionsById[regionId] ?: continue
+            val region = regionsById[regionId] ?: continue
 
             if (region.state == OfflineRegionState.COMPLETED) {
 
@@ -98,9 +98,8 @@ class AutoUpdateManager(
 
                 startedDownloads.remove(regionId)
 
-                //
-                // Сразу ищем следующий регион.
-                //
+                onCopyRegion(regionId)
+
                 checkSchedule()
 
                 return

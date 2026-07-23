@@ -25,10 +25,14 @@ import androidx.compose.ui.unit.dp
 import auto.atom.yandexmapdownloadmanager.flatten
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegion
 import auto.atom.yandexmapdownloadmanager.model.OfflineRegionState
+import auto.atom.yandexmapdownloadmanager.model.OfflineRussiaRegion
 import auto.atom.yandexmapdownloadmanager.model.RegionUpdateTask
 import auto.atom.yandexmapdownloadmanager.model.UpdateReason
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
 import auto.atom.yandexmapdownloadmanager.timer.model.UpdatePolicy
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.io.File
 
 private sealed interface TimerListItem {
     data class Header(
@@ -144,8 +148,18 @@ fun AutoMapsScreen(
                             editingRegion = region
                             showDatePicker = true
                         },
-                        onCopyRegion = { region ->
-                            viewModel.copyRegion(region)
+                        onCopyRegionPath = { region ->
+
+                            val folder = OfflineRussiaRegion.folderName(region.id)
+
+                            val path = File(viewModel.pathMap+"/$folder", region.id.toString()).absolutePath
+
+                            Toolkit.getDefaultToolkit()
+                                .systemClipboard
+                                .setContents(
+                                    StringSelection(path),
+                                    null
+                                )
                         }
                     )
                 }

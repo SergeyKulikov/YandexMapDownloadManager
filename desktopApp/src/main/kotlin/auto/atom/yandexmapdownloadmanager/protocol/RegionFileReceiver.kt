@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.protocol
 
+import auto.atom.yandexmapdownloadmanager.model.OfflineRussiaRegion
 import auto.atom.yandexmapdownloadmanager.protocol.model.FileDataPayload
 import java.io.File
 import java.io.FileOutputStream
@@ -48,12 +49,16 @@ class RegionFileReceiver(
         lastPart: Boolean
     ) {
 
+        val folder = OfflineRussiaRegion.folderName(chunk.regionId)
+
         // Формируем путь:
         // <root>/<regionId>/<fileName>
         val file = File(
             root,
-            "${chunk.regionId}/${chunk.fileName}"
+            "$folder/${chunk.regionId}/${chunk.fileName}"
         )
+
+
 
         // Если начали получать другой файл —
         // закрываем предыдущий и открываем новый.

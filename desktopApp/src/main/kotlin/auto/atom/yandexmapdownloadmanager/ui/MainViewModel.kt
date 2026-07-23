@@ -7,6 +7,7 @@ import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApi
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolApiImpl
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolException
 import auto.atom.yandexmapdownloadmanager.protocol.DesktopProtocolSession
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
@@ -261,6 +262,7 @@ class MainViewModel {
 
                     protocolSession!!.setOnRegionStateChangedListener(::updateRegionState)
                     protocolSession!!.setOnRegionProgressChangedListener(::updateRegionProgress)
+                    protocolSession!!.setOnFileCopyProgressChangedListener(::updateFileCopyProgress)
 
                     protocolApi = DesktopProtocolApiImpl(protocolSession!!)
 
@@ -523,6 +525,32 @@ class MainViewModel {
                 payload.regionId,
                 payload.progress
             )
+        }
+    }
+
+    private fun updateFileCopyProgress(
+        payload: FileCopyProgressPayload
+    ) {
+        _regions.value = _regions.value.map {
+            it.updateFileCopyProgress(payload)
+        }
+    }
+
+    private fun OfflineRegion.updateFileCopyProgress(
+        payload: FileCopyProgressPayload
+    ): OfflineRegion {
+
+        val newChildren = children
+            .map { it.updateFileCopyProgress(payload) }
+            .toMutableList()
+
+        return if (id == payload.regionId) {
+            copy(
+                fileCopyProgress = payload,
+                children = newChildren
+            )
+        } else {
+            copy(children = newChildren)
         }
     }
 

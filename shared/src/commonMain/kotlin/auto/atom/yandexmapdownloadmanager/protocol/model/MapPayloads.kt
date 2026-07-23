@@ -40,6 +40,8 @@ data class RegionProgressPayload(
 data class FileCopyProgressPayload(
     val regionId: Int,
     val fileName: String,
+    val bytesCopied: Long,
+    val totalBytes: Long,
     val progress: Float
 )
 

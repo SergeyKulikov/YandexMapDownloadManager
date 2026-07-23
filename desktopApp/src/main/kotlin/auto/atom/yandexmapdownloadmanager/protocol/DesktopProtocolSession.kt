@@ -117,6 +117,12 @@ class DesktopProtocolSession(
         onRegionProgressChanged = listener
     }
 
+    fun setOnFileCopyProgressChangedListener(
+        listener: (FileCopyProgressPayload) -> Unit
+    ) {
+        onFileCopyProgressChanged = listener
+    }
+
     /**
      * Отправляет запрос и ожидает ответ.
      */
@@ -321,5 +327,6 @@ class DesktopProtocolSession(
 
         onRegionStateChanged = null
         onRegionProgressChanged = null
+        onFileCopyProgressChanged = null
     }
 }

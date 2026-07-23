@@ -5,6 +5,8 @@ import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.model.FileTransferState
 import auto.atom.yandexmapdownloadmanager.protocol.model.BinaryFileFrame
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressNotification
+import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.model.FileDataPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
@@ -31,6 +33,9 @@ class GetRegionFileHandler(
         private const val CHUNK_SIZE = 64 * 1024
     }
 
+    private var totalBytes = 0L
+    private var copiedBytes = 0L
+
     override suspend fun execute(
         request: Request,
         connection: Connection
@@ -51,17 +56,22 @@ class GetRegionFileHandler(
                 "Region directory not found: ${regionDir.absolutePath}"
             }
 
-            regionDir.listFiles()
+            val files = regionDir.listFiles()
                 ?.filter { it.isFile }
                 ?.sortedBy { it.name }
-                ?.forEach { file ->
-                    sendFile(
-                        request = request,
-                        connection = connection,
-                        regionId = payload.regionId,
-                        file = file
-                    )
-                }
+                ?: emptyList()
+
+            totalBytes = files.sumOf { it.length() }
+            copiedBytes = 0L
+
+            files.forEach { file ->
+                sendFile(
+                    request = request,
+                    connection = connection,
+                    regionId = payload.regionId,
+                    file = file
+                )
+            }
 
             connection.sendAsync(
                 Packet(
@@ -157,6 +167,21 @@ class GetRegionFileHandler(
                 )
 
                 currentOffset += read
+                copiedBytes += read
+
+                connection.sendAsync(
+                    Packet(
+                        message = FileCopyProgressNotification(
+                            FileCopyProgressPayload(
+                                regionId = regionId,
+                                fileName = file.name,
+                                bytesCopied = copiedBytes,
+                                totalBytes = totalBytes,
+                                progress = copiedBytes.toFloat() / totalBytes
+                            )
+                        )
+                    )
+                )
             }
         }
 

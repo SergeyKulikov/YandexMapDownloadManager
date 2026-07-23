@@ -139,6 +139,21 @@ class AutoUpdateManager(
                 OfflineRegionState.UNSUPPORTED ->
                     continue
 
+                //
+                // Если карта отсутствует на устройстве,
+                // скачиваем её сразу, не обращая внимания на расписание.
+                //
+                OfflineRegionState.AVAILABLE -> {
+
+                    startedDownloads += regionId
+
+                    onDownloadRegion(regionId)
+
+                    onDownloadStarted(regionId)
+
+                    return
+                }
+
                 else -> Unit
             }
 

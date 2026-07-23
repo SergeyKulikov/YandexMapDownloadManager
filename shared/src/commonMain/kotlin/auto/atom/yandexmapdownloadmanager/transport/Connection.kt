@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+import auto.atom.yandexmapdownloadmanager.protocol.model.BinaryFileFrame
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import kotlinx.coroutines.flow.StateFlow
 
@@ -46,6 +47,8 @@ interface Connection {
 
     fun sendAsync(packet: Packet)
 
+    suspend fun sendBinary(frame: BinaryFileFrame)
+
     /**
      * Ожидает получение следующего сообщения.
      *
@@ -54,7 +57,8 @@ interface Connection {
      *
      * @return полученное сообщение.
      */
-    suspend fun receive(): Packet?
+    suspend fun receive(): IncomingFrame?
+
 
     /**
      * Закрывает соединение и освобождает связанные ресурсы.

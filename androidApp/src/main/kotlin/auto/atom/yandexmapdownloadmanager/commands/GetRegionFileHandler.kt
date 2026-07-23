@@ -4,6 +4,7 @@ import android.util.Log
 import auto.atom.yandexmapdownloadmanager.dispatcher.CommandHandler
 import auto.atom.yandexmapdownloadmanager.map.OfflineYandexMapsManager
 import auto.atom.yandexmapdownloadmanager.model.FileTransferState
+import auto.atom.yandexmapdownloadmanager.protocol.model.BinaryFileFrame
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import auto.atom.yandexmapdownloadmanager.protocol.model.FileDataPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionPayload
@@ -27,7 +28,7 @@ class GetRegionFileHandler(
 ) : CommandHandler {
 
     companion object {
-        private const val CHUNK_SIZE = 1024 * 1024
+        private const val CHUNK_SIZE = 64 * 1024
     }
 
     override suspend fun execute(
@@ -61,6 +62,16 @@ class GetRegionFileHandler(
                         file = file
                     )
                 }
+
+            connection.sendAsync(
+                Packet(
+                    message = Response(
+                        id = request.id,
+                        command = request.command,
+                        status = Status.OK
+                    )
+                )
+            )
 
             Log.d(
                 "PROTO",
@@ -111,6 +122,7 @@ class GetRegionFileHandler(
                     break
                 }
 
+                /*
                 connection.sendAsync(
                     Packet(
                         message = Response(
@@ -128,6 +140,19 @@ class GetRegionFileHandler(
                         ),
                         fragmentIndex = index++,
                         isLastPart = (currentOffset + read >= totalSize)
+                    )
+                )
+
+                 */
+
+                connection.sendBinary(
+                    BinaryFileFrame(
+                        requestId = request.id,
+                        regionId = regionId,
+                        fileName = file.name,
+                        offset = currentOffset,
+                        lastPart = (currentOffset + read >= totalSize),
+                        bytes = currentBuffer.copyOf(read)
                     )
                 )
 

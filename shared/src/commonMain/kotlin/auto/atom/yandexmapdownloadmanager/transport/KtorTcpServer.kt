@@ -60,28 +60,34 @@ class KtorTcpServer(
         }
     }
 
-    private suspend fun handshake(connection: Connection): Boolean {
+    private suspend fun handshake(
+        connection: Connection
+    ): Boolean {
 
-        val request = connection.receive()
+        val incoming = connection.receive()
 
-        if (request?.message !is HelloRequest) {
+        val packet = when (incoming) {
+            is JsonFrame -> incoming.packet
+            is BinaryFrame -> return false
+            null -> return false
+        }
+
+        val request = packet.message as? HelloRequest
+            ?: return false
+
+        if (packet.protocolVersion != PROTOCOL_VERSION) {
             return false
         }
 
-        if (request.protocolVersion != PROTOCOL_VERSION) {
-            return false
-        }
-
-        if (request.message.application != APPLICATION_NAME) {
+        if (request.application != APPLICATION_NAME) {
             return false
         }
 
         return connection.send(
             Packet(
-                message =
-                    HelloResponse(
-                        application = APPLICATION_NAME
-                    )
+                message = HelloResponse(
+                    application = APPLICATION_NAME
+                )
             )
         )
     }

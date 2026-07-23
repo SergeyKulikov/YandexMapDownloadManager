@@ -23,7 +23,9 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStateNotification
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.transport.BinaryFrame
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import auto.atom.yandexmapdownloadmanager.transport.JsonFrame
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -84,19 +86,30 @@ class AndroidProtocolHandler(
     )
 
     suspend fun run() {
+
         while (connection.isConnected.value) {
 
-            val packet = connection.receive() ?: break
+            when (val incoming = connection.receive()) {
+                null -> break
 
-            when (val message = packet.message) {
-                is Request -> {
-                    scope.launch {
-                        dispatcher.dispatch(message, connection)
+                is JsonFrame -> {
+                    when (val message = incoming.packet.message) {
+
+                        is Request -> {
+                            scope.launch {
+                                dispatcher.dispatch(
+                                    message,
+                                    connection
+                                )
+                            }
+                        }
+
+                        else -> { }
                     }
                 }
 
-                else -> {
-                    // Никаких других веток в Android не ждем
+                is BinaryFrame -> {
+                    // Android не принимает бинарные кадры
                 }
             }
         }

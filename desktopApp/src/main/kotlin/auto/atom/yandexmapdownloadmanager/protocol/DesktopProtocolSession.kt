@@ -13,7 +13,9 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Request
 import auto.atom.yandexmapdownloadmanager.protocol.model.Response
 import auto.atom.yandexmapdownloadmanager.protocol.model.Status
+import auto.atom.yandexmapdownloadmanager.transport.BinaryFrame
 import auto.atom.yandexmapdownloadmanager.transport.Connection
+import auto.atom.yandexmapdownloadmanager.transport.JsonFrame
 import auto.atom.yandexmapdownloadmanager.transport.ProtocolJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -189,95 +191,94 @@ class DesktopProtocolSession(
     private suspend fun receiveLoop() {
         try {
             while (connection.isConnected.value) {
-                val packet = connection.receive() ?: break
 
-                when (val message = packet.message) {
-                    is Response -> {
+                when (val incoming = connection.receive()) {
 
-                        val fileData = message.payload?.let {
-                            runCatching {
-                                ProtocolJson.decodeFromJsonElement<FileDataPayload>(it)
-                            }.getOrNull()
-                        }
+                    null -> break
 
-                        /*
-                        if (fileData != null) {
-                            regionFileReceiver.onChunk(
-                                fileData,
-                                packet.isLastPart
-                            )
-                            continue
-                        }
-                        */
+                    is JsonFrame -> {
 
-                        if (fileData != null) {
+                        when (val message = incoming.packet.message) {
 
-                            if (currentFileName != fileData.fileName) {
-                                currentFileName = fileData.fileName
-                                currentFileStartedAt = System.nanoTime()
-
-                                println(">>> START ${fileData.fileName}")
+                            is Response -> {
+                                pendingRequests[message.id]?.complete(message)
                             }
 
-                            regionFileReceiver.onChunk(
-                                fileData,
-                                packet.isLastPart
-                            )
-
-                            if (packet.isLastPart) {
-
-                                val elapsedMs =
-                                    (System.nanoTime() - currentFileStartedAt) / 1_000_000.0
-
+                            is RegionStateNotification -> {
                                 println(
-                                    ">>> FINISH ${fileData.fileName} " +
-                                            "(${String.format("%.2f", elapsedMs)} ms)"
+                                    "<<< REGION STATE ${message.payload.regionId} ${message.payload.state}"
                                 )
-
-                                currentFileName = null
-                                currentFileStartedAt = 0L
+                                handleRegionState(message.payload)
                             }
 
-                            continue
+                            is RegionProgressNotification -> {
+                                println(
+                                    "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
+                                )
+                                handleRegionProgress(message.payload)
+                            }
+
+                            is FileCopyProgressNotification -> {
+                                println(
+                                    "<<< FILE PROGRESS ${message.payload.regionId} ${message.payload.fileName} ${message.payload.progress}"
+                                )
+                                handleFileCopyProgress(message.payload)
+                            }
+
+                            is Request -> {
+                                // Desktop не принимает Request
+                            }
+
+                            is HelloRequest,
+                            is HelloResponse -> {
+                                // Уже обработаны во время handshake()
+                            }
+                        }
+                    }
+
+                    is BinaryFrame -> {
+
+                        val file = incoming.frame
+
+                        if (currentFileName != file.fileName) {
+                            currentFileName = file.fileName
+                            currentFileStartedAt = System.nanoTime()
+
+                            println(">>> START ${file.fileName}")
                         }
 
-                        pendingRequests[message.id]?.complete(message)
-                    }
-
-                    is RegionStateNotification -> {
-                        println(
-                            "<<< REGION STATE ${message.payload.regionId} ${message.payload.state}"
+                        regionFileReceiver.onChunk(
+                            FileDataPayload(
+                                regionId = file.regionId,
+                                fileName = file.fileName,
+                                offset = file.offset,
+                                bytes = file.bytes
+                            ),
+                            file.lastPart
                         )
-                        handleRegionState(message.payload)
-                    }
 
-                    is RegionProgressNotification -> {
-                        println(
-                            "<<< REGION PROGRESS ${message.payload.regionId} ${message.payload.progress}"
-                        )
-                        handleRegionProgress(message.payload)
-                    }
+                        if (file.lastPart) {
 
-                    is FileCopyProgressNotification -> {
-                        println(
-                            "<<< FILE PROGRESS ${message.payload.regionId} ${message.payload.fileName} ${message.payload.progress}"
-                        )
-                        handleFileCopyProgress(message.payload)
-                    }
+                            val elapsedMs =
+                                (System.nanoTime() - currentFileStartedAt) / 1_000_000.0
 
-                    is Request -> {
-                        // Desktop не принимает Request
-                    }
+                            println(
+                                ">>> FINISH ${file.fileName} (${String.format("%.2f", elapsedMs)} ms)"
+                            )
 
-                    is HelloRequest,
-                    is HelloResponse -> {
-                        // Уже обработаны во время handshake()
+                            currentFileName = null
+                            currentFileStartedAt = 0L
+                        }
                     }
                 }
             }
+
         } catch (_: CancellationException) {
+
             // Нормальное завершение
+
         } finally {
+
             connectionClosed()
         }
     }

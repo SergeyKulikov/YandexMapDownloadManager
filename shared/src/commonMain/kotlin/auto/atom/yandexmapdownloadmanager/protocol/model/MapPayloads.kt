@@ -65,3 +65,12 @@ data class FileDataPayload(
     val offset: Long = 0L,
     val bytes: ByteArray = ByteArray(0)
 )
+
+data class BinaryFileFrame(
+    val requestId: String,
+    val regionId: Int,
+    val fileName: String,
+    val offset: Long,
+    val lastPart: Boolean,
+    val bytes: ByteArray
+)

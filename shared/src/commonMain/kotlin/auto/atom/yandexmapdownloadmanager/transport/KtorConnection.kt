@@ -1,5 +1,6 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+import auto.atom.yandexmapdownloadmanager.protocol.model.BinaryFileFrame
 import auto.atom.yandexmapdownloadmanager.protocol.model.Packet
 import io.ktor.network.sockets.Socket
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +42,8 @@ internal class KtorConnection(
     /**
      * Очередь исходящих сообщений.
      */
-    private val sendChannel = Channel<Packet>(Channel.UNLIMITED)
+    // private val sendChannel = Channel<TransportFrame>(Channel.UNLIMITED)
+    private val sendChannel = Channel<TransportFrame>(16)
 
     /**
      * Текущее состояние соединения.
@@ -55,11 +57,16 @@ internal class KtorConnection(
 
             println(">>> Writer started")
 
-            for (packet in sendChannel) {
+            for (frame in sendChannel) {
 
-                println(">>> Writer got ${packet.message::class.simpleName}")
+                when (frame) {
 
-                if (!send(packet)) break
+                    is JsonTransportFrame ->
+                        frameIO.writeFrame(frame)
+
+                    is BinaryTransportFrame ->
+                        frameIO.writeFrame(frame)
+                }
             }
 
             println(">>> Writer stopped")
@@ -70,14 +77,28 @@ internal class KtorConnection(
      * Асинхронно помещает пакет в очередь на отправку.
      */
     override fun sendAsync(packet: Packet) {
-
-        println(">>> QUEUE ${packet.message::class.simpleName}")
-
-        val result = sendChannel.trySend(packet)
-
-        if (result.isFailure) {
-            println(">>> QUEUE FAILED ${result.exceptionOrNull()}")
+        scope.launch {
+            sendChannel.send(
+                JsonTransportFrame(
+                    ProtocolJson.encodeToString(
+                        Packet.serializer(),
+                        packet
+                    ).encodeToByteArray()
+                )
+            )
         }
+    }
+
+    override suspend fun sendBinary(
+        frame: BinaryFileFrame
+    ) {
+        if (!_isConnected.value) {
+            return
+        }
+
+        sendChannel.send(
+            BinaryTransportFrame(frame)
+        )
     }
 
     /**
@@ -86,23 +107,24 @@ internal class KtorConnection(
      * Метод вызывается только одной корутиной,
      * поэтому запись в сокет всегда последовательная.
      */
-    override suspend fun send(message: Packet): Boolean {
+    override suspend fun send(packet: Packet): Boolean {
 
-        if (!_isConnected.value) return false
+        if (!_isConnected.value) {
+            return false
+        }
 
         return try {
 
             val json = ProtocolJson.encodeToString(
                 Packet.serializer(),
-                message
+                packet
             )
 
-            // println(">>> SEND ${message::class.simpleName}")
-            // println(json)
-
-            frameIO.writeFrame(json.encodeToByteArray())
-
-            // println(">>> WRITE OK")
+            frameIO.writeFrame(
+                JsonTransportFrame(
+                    json.encodeToByteArray()
+                )
+            )
 
             true
 
@@ -132,34 +154,36 @@ internal class KtorConnection(
             false
         }
     }
-
     /**
-     * Ожидает получение следующего пакета.
+     * Ожидает получение следующего кадра.
      *
-     * @return полученный пакет или null,
+     * @return полученный кадр или null,
      * если соединение закрыто.
      */
-    override suspend fun receive(): Packet? {
+    override suspend fun receive(): IncomingFrame? {
 
         if (!_isConnected.value) return null
 
         return try {
 
-            val payload = frameIO.readFrame()
+            when (val frame = frameIO.readFrame()) {
 
-            // println("<<< RECV")
-            // println(payload.decodeToString())
+                is JsonTransportFrame ->
+                    JsonFrame(
+                        ProtocolJson.decodeFromString(
+                            Packet.serializer(),
+                            frame.payload.decodeToString()
+                        )
+                    )
 
-            ProtocolJson.decodeFromString(
-                Packet.serializer(),
-                payload.decodeToString()
-            )
+                is BinaryTransportFrame ->
+                    BinaryFrame(frame.frame)
+            }
 
-        } catch (ee: CancellationException) {
-            throw ee
+        } catch (e: CancellationException) {
+            throw e
+
         } catch (e: java.io.EOFException) {
-
-            // println("<<< Connection closed")
 
             _isConnected.value = false
             sendChannel.close()
@@ -171,7 +195,6 @@ internal class KtorConnection(
 
         } catch (e: Exception) {
 
-            // println("<<< RECEIVE FAILED")
             e.printStackTrace()
 
             _isConnected.value = false

@@ -1,33 +1,18 @@
 package auto.atom.yandexmapdownloadmanager.transport
 
+import auto.atom.yandexmapdownloadmanager.protocol.model.BinaryFileFrame
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
+import io.ktor.utils.io.readByte
 import io.ktor.utils.io.readFully
 import io.ktor.utils.io.readInt
+import io.ktor.utils.io.readLong
+import io.ktor.utils.io.writeByte
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeInt
+import io.ktor.utils.io.writeLong
 
-/**
- * Выполняет передачу сообщений по TCP-соединению.
- *
- * Каждое сообщение передается в виде отдельного фрейма:
- *
- * +-----------------+----------------------+
- * | 4 байта (Int32) | Данные сообщения     |
- * +-----------------+----------------------+
- *
- * Сначала записывается длина сообщения в байтах,
- * затем передаются сами данные.
- *
- * Такой формат позволяет принимающей стороне точно определить,
- * где заканчивается одно сообщение и начинается следующее.
- *
- * Формат фрейма является транспортным уровнем протокола
- * и не зависит от содержимого сообщения.
- * Данные внутри фрейма сериализуются отдельно
- * (например, через JSON-протокол).
- */
 internal class FrameIO(
     private val input: ByteReadChannel,
     private val output: ByteWriteChannel
@@ -35,79 +20,138 @@ internal class FrameIO(
 
     private companion object {
 
-        /**
-         * Максимальный размер одного фрейма.
-         *
-         * Ограничение защищает от некорректных данных,
-         * когда удаленная сторона отправляет поврежденную
-         * или ошибочную длину сообщения.
-         */
         const val MAX_FRAME_SIZE = 16 * 1024 * 1024
+
+        private const val FRAME_JSON: Byte = 1
+        private const val FRAME_FILE: Byte = 2
     }
 
-    /**
-     * Записывает один фрейм.
-     *
-     * В TCP нет понятия границ сообщений:
-     * один вызов отправки на одной стороне не гарантирует,
-     * что на другой стороне он будет получен одним чтением.
-     *
-     * Поэтому перед данными записывается их размер.
-     */
-    suspend fun writeFrame(payload: ByteArray) {
-        require(payload.isNotEmpty()) {
-            "Cannot send empty protocol frame"
+    suspend fun writeFrame(
+        frame: TransportFrame
+    ) {
+        when (frame) {
+
+            is JsonTransportFrame -> {
+
+                val payload = frame.payload
+
+                require(payload.isNotEmpty())
+                require(payload.size <= MAX_FRAME_SIZE)
+
+                output.writeByte(FRAME_JSON)
+                output.writeInt(payload.size)
+                output.writeFully(payload)
+            }
+
+            is BinaryTransportFrame -> {
+
+                val binary = frame.frame
+
+                require(binary.bytes.isNotEmpty())
+                require(binary.bytes.size <= MAX_FRAME_SIZE)
+
+                val requestIdBytes =
+                    binary.requestId.encodeToByteArray()
+
+                val fileNameBytes =
+                    binary.fileName.encodeToByteArray()
+
+                output.writeByte(FRAME_FILE)
+
+                output.writeInt(requestIdBytes.size)
+                output.writeFully(requestIdBytes)
+
+                output.writeInt(binary.regionId)
+
+                output.writeInt(fileNameBytes.size)
+                output.writeFully(fileNameBytes)
+
+                output.writeLong(binary.offset)
+
+                output.writeInt(binary.bytes.size)
+                output.writeFully(binary.bytes)
+
+                output.writeByte(
+                    if (binary.lastPart) 1 else 0
+                )
+            }
         }
 
-        require(payload.size <= MAX_FRAME_SIZE) {
-            "Frame too large: ${payload.size}"
-        }
-
-        output.writeInt(payload.size)
-        output.writeFully(payload)
         output.flush()
     }
 
-    /**
-     * Считывает следующий фрейм.
-     *
-     * Сначала читается размер сообщения,
-     * затем указанное количество байт данных.
-     *
-     * Метод ожидает получение полного фрейма.
-     * Если соединение закрыто до получения всех данных,
-     * будет выброшено исключение канала ввода.
-     */
-    suspend fun readFrame(): ByteArray {
-        val length = input.readInt()
+    suspend fun readFrame(): TransportFrame {
 
-        require(length in 1..MAX_FRAME_SIZE) {
-            "Invalid frame length: $length"
+        return when (input.readByte()) {
+
+            FRAME_JSON -> {
+
+                val length = input.readInt()
+
+                require(length in 1..MAX_FRAME_SIZE)
+
+                val payload = ByteArray(length)
+
+                input.readFully(payload)
+
+                JsonTransportFrame(payload)
+            }
+
+            FRAME_FILE -> {
+
+                val requestIdLength = input.readInt()
+
+                require(requestIdLength in 1..4096)
+
+                val requestIdBytes = ByteArray(requestIdLength)
+                input.readFully(requestIdBytes)
+
+                val regionId = input.readInt()
+
+                val fileNameLength = input.readInt()
+
+                require(fileNameLength in 1..4096)
+
+                val fileNameBytes = ByteArray(fileNameLength)
+                input.readFully(fileNameBytes)
+
+                val offset = input.readLong()
+
+                val chunkLength = input.readInt()
+
+                require(chunkLength in 1..MAX_FRAME_SIZE)
+
+                val bytes = ByteArray(chunkLength)
+                input.readFully(bytes)
+
+                val isLastChunk =
+                    input.readByte().toInt() != 0
+
+                BinaryTransportFrame(
+                    BinaryFileFrame(
+                        requestId = requestIdBytes.decodeToString(),
+                        regionId = regionId,
+                        fileName = fileNameBytes.decodeToString(),
+                        offset = offset,
+                        lastPart = isLastChunk,
+                        bytes = bytes
+                    )
+                )
+            }
+
+            else ->
+                error("Unknown frame type")
         }
-
-        val payload = ByteArray(length)
-
-        input.readFully(payload)
-
-        return payload
     }
 
-    /**
-     * Закрывает каналы ввода/вывода.
-     *
-     * После закрытия экземпляр FrameIO больше не может
-     * использоваться для передачи данных.
-     */
     suspend fun close() {
         try {
             output.flush()
         } catch (_: Exception) {
-            // ignore
         } finally {
             try {
                 output.flushAndClose()
             } catch (_: Exception) {
-                // ignore
             }
 
             input.cancel()

@@ -101,9 +101,15 @@ class KtorTcpClient {
             )
         )
 
-        val response = connection.receive()
+        val frame = connection.receive()
 
-        require(response?.message is HelloResponse) {
+        require(frame is JsonFrame) {
+            "Invalid handshake response"
+        }
+
+        val response = frame.packet
+
+        require(response.message is HelloResponse) {
             "Invalid handshake response"
         }
 

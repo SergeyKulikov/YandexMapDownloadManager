@@ -324,10 +324,8 @@ class OfflineYandexMapsManager {
     suspend fun getCachePath(): String =
         withContext(Dispatchers.Main) {
             suspendCancellableCoroutine { continuation ->
-
                 offlineCacheManager.requestPath { path ->
-
-                    continuation.resume(path) {
+                    continuation.resume(path) { cause, _, _ ->
                         // ничего освобождать не нужно
                     }
                 }

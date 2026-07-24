@@ -152,7 +152,7 @@ fun AutoMapsScreen(
 
                             val folder = OfflineRussiaRegion.folderName(region.id)
 
-                            val path = File(viewModel.pathMap+"/$folder", region.id.toString()).absolutePath
+                            val path = File(viewModel.defaultCopyDirectory.value+"/$folder", region.id.toString()).absolutePath
 
                             Toolkit.getDefaultToolkit()
                                 .systemClipboard

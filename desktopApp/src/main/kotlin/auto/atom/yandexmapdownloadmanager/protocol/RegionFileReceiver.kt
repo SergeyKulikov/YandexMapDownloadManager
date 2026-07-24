@@ -59,7 +59,6 @@ class RegionFileReceiver(
         )
 
 
-
         // Если начали получать другой файл —
         // закрываем предыдущий и открываем новый.
         if (currentFile?.absolutePath != file.absolutePath) {

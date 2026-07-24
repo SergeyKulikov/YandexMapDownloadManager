@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 
 plugins {
     // alias(libs.plugins.kotlinAndroid)
@@ -67,11 +68,42 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
+val appName = "YandexMapDownloadManager"
+
+val versionName = android.defaultConfig.versionName!!
+val versionCode = android.defaultConfig.versionCode!!
+
+listOf("Debug", "Release").forEach { buildType ->
+
+    tasks.register<Copy>("rename${buildType}Apk") {
+
+        dependsOn("assemble$buildType")
+
+        val type = buildType.lowercase()
+
+        from(layout.buildDirectory.dir("outputs/apk/$type"))
+        into(layout.buildDirectory.dir("apk"))
+
+        val versionName = android.defaultConfig.versionName!!
+        val versionCode = android.defaultConfig.versionCode!!
+
+        rename {
+            "$appName-v$versionName($versionCode)-$type.apk"
+        }
     }
 }

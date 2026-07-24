@@ -182,7 +182,7 @@ class OfflineYandexMapsManager {
         onLoaded: (List<Region>) -> Unit
     ) {
 
-        logCachePath()
+        // logCachePath()
 
         onRegionsLoaded = onLoaded
 
@@ -320,18 +320,6 @@ class OfflineYandexMapsManager {
     fun mayBeOutOfAvailableSpace(regionId: Int): Boolean =
         offlineCacheManager.mayBeOutOfAvailableSpace(regionId)
 
-
-    fun logCachePath() {
-        scope.launch {
-            offlineCacheManager.requestPath { path ->
-
-                android.util.Log.d(
-                    "MAP_CACHE",
-                    "Offline cache path = $path"
-                )
-            }
-        }
-    }
 
     suspend fun getCachePath(): String =
         withContext(Dispatchers.Main) {

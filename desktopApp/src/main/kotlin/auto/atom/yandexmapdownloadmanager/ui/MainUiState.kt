@@ -97,5 +97,5 @@ data class MainUiState(
      */
     val log: List<String> = emptyList(),
 
-    val isBusy: Boolean = false
+    val isBusy: Boolean = false,
 )

@@ -11,6 +11,8 @@ import auto.atom.yandexmapdownloadmanager.protocol.model.FileCopyProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.Protocol
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionProgressPayload
 import auto.atom.yandexmapdownloadmanager.protocol.model.RegionStatePayload
+import auto.atom.yandexmapdownloadmanager.setting.JsonSettingsManager
+import auto.atom.yandexmapdownloadmanager.setting.Settings
 import auto.atom.yandexmapdownloadmanager.timer.AutoUpdateManager
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionAssignments
 import auto.atom.yandexmapdownloadmanager.timer.model.RegionDownloadState
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
@@ -38,6 +41,8 @@ import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.util.UUID
+import javax.swing.JFileChooser
+import javax.swing.SwingUtilities
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -47,6 +52,16 @@ import kotlin.time.Duration.Companion.days
  * запуском и остановкой TCP-сервера.
  */
 class MainViewModel {
+    private val settingsManager = JsonSettingsManager.create(
+        settingsDirectory = File("config"),
+        defaultValue = Settings(
+            host = "0.0.0.0",
+            port = "5555",
+            defaultCopyDirectory = "c:/temp"
+        )
+    )
+
+    private var settings = settingsManager.loadSettings()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -89,7 +104,7 @@ class MainViewModel {
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     val pathConfig = "${System.getenv("LOCALAPPDATA")}/YandexMapDownloadManager/config"
-    val pathMap = "C:/temp/map_cache"
+    // val pathMap = "C:/temp/map_cache"
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
@@ -260,7 +275,7 @@ class MainViewModel {
 
                     connection = server.waitForConnection()
 
-                    protocolSession = DesktopProtocolSession(connection!!,pathMap)
+                    protocolSession = DesktopProtocolSession(connection!!,defaultCopyDirectory.value)
                     protocolSession!!.start()
 
                     protocolSession!!.setOnRegionStateChangedListener(::updateRegionState)
@@ -878,5 +893,42 @@ class MainViewModel {
 
     fun dismissError() {
         _errorMessage.value = null
+    }
+
+    fun selectCopyDirectory() {
+
+        val chooser = JFileChooser().apply {
+            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+            isAcceptAllFileFilterUsed = false
+            dialogTitle = "Выберите каталог для копирования карт"
+
+            val directory = File(defaultCopyDirectory.value)
+
+            if (directory.exists() && directory.isDirectory) {
+                currentDirectory = directory
+                selectedFile = directory
+            }
+        }
+
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            saveDefaultCopyDirectory(chooser.selectedFile.absolutePath)
+        }
+    }
+
+    private val _defaultCopyDirectory =
+        MutableStateFlow(settings.defaultCopyDirectory)
+
+    val defaultCopyDirectory: StateFlow<String> =
+        _defaultCopyDirectory.asStateFlow()
+
+    private fun saveDefaultCopyDirectory(path: String) {
+
+        settings = settings.copy(
+            defaultCopyDirectory = path
+        )
+
+        settingsManager.saveSettings(settings)
+
+        _defaultCopyDirectory.value = path
     }
 }
